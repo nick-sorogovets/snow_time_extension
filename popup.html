@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!--
+ This page is shown when the extension button is clicked, because the
+ "browser_action" field in manifest.json contains the "default_popup" key with
+ value "popup.html".
+ -->
+<html>
+
+<head>
+  <title>SNOW Screenshot</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src= "jquery.min.js"></script>
+  <script src="popup.js"></script>
+  <script src="https://apis.google.com/js/api.js?onload=loadSettings">
+  </script>
+</head>
+
+<body>
+  <h3>SNOW Extension</h3>
+  <div>
+     <!--Add buttons to initiate auth sequence and sign out-->
+    <button id="authorize_button">Authorize</button>
+    <button id="signout_button" style="display: none;">Sign Out</button>
+  </div>
+  <div>
+    <button id="btn-get-data" class="btn">Take screenshot</button>
+  </div>
+
+  <div id="container">
+  </div>
+  <div id="screenshot" class="hidden screenshot">
+    <img id="screenshot-preview" src="" class="screenshot-preview"/>
+  </div>
+  <div id="msg-success" class="hidden">
+    <p class="success">Success</p>
+  </div>
+  <div id="msg-error" class="hidden">
+      <p class="error">Something went wrong. Try again later.</p>
+  </div>
+</body>
+</html>

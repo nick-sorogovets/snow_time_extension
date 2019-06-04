@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>SNOW Screenshot Extension Options</title>
+  <style>
+    body {
+      font-size: 15px;
+      margin: 10px;
+    }
+
+    input {
+      margin-left: 10px;
+      position: relative;
+    }
+  </style>
+</head>
+
+<body>
+  <form id="settingsForm">
+    <fieldset>
+      <legend>Extension settings</legend>
+      <div>
+        <label for="domain-url">Domain url:</label>
+        <input id="domain-url" type="text" placeholder="Enter domain url here" required/>
+      </div>
+      <div>
+        <label for="username">User name:</label>
+        <input id="username" type="text" placeholder="Enter Username Prefix here" required/>
+      </div>
+      <div id="status"></div>
+      <div>
+        <button type="submit">Save</button>
+      </div>
+    </fieldset>
+  </form>
+  <script src="jquery.min.js"></script>
+  <script src="options.js"></script>
+</body>
+
+</html>
