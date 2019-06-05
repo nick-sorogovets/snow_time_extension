@@ -64,7 +64,43 @@ function takeScreenshot() {
 
 
 function getListOfSubFolders(){
-  
+  const { domain } = settings;
+
+  const folderId = domain.substring(domain.lastIndexOf('/')+1);
+
+  $.ajax({
+    url:'https://www.googleapis.com/drive/v3/files',
+    crossDomain: true,
+    headers: {
+      'Authorization': 'Bearer ' + data.token
+    },
+    method: 'GET',
+    data: {
+      corpora: 'user',
+      q: `mimeType = 'application/vnd.google-apps.folder' and '${folderId}' in parents`,
+      supportsTeamDrives: true
+    }
+  })
+  .done((response) => {
+    data ={
+      ...data,
+      folders: response.files
+    };
+
+    renderFolderList(response.files);
+  })
+  .fail(function( jqXHR, textStatus ) {
+    alert( "Request failed: " + textStatus );
+  });
+
+}
+
+function renderFolderList(folders){
+  $('#container').empty();
+
+  folders.map(folder => {
+    $('#container').append(`<div data-id="${folder.id}" class="folder">${folder.name}</div>`);
+  });
 }
 
 function loadSettings() {
@@ -208,13 +244,15 @@ document.addEventListener('DOMContentLoaded', () => {
   btnGetData.addEventListener('click', () => {
     takeScreenshot();
   });
+
   const authorizeButton = document.getElementById('authorize_button');
   authorizeButton.addEventListener('click', () => {
     handleAuthClick();
   })
-  const signoutButton = document.getElementById('signout_button');
-  signoutButton.addEventListener('click', () => {
-    handleSignoutClick();
+
+  const callApiButton = document.getElementById('call_api_button');
+  callApiButton.addEventListener('click', () => {
+    getListOfSubFolders();
   })
 
 

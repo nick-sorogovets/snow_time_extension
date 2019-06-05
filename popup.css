@@ -91,3 +91,11 @@ text-align: center;
   width: 300px;
   height: auto;
 }
+
+.folder::before {
+  background-image: "./img/folder.png";
+}
+
+.folder {
+  cursor: pointer;
+}
