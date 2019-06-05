@@ -9,7 +9,7 @@
 <head>
   <title>SNOW Screenshot</title>
   <link rel="stylesheet" href="popup.css">
-  <script src= "jquery.min.js"></script>
+  <script src="jquery.min.js"></script>
   <script src="popup.js"></script>
   <script src="https://apis.google.com/js/api.js?onload=loadSettings">
   </script>
@@ -18,25 +18,31 @@
 <body>
   <h3>SNOW Extension</h3>
   <div>
-     <!--Add buttons to initiate auth sequence and sign out-->
+    <!--Add buttons to initiate auth sequence and sign out-->
     <button id="authorize_button">Authorize</button>
-    <button id="call_api_button" >Call API</button>
+    <button id="call_api_button">Call API</button>
   </div>
   <div>
     <button id="btn-get-data" class="btn">Take screenshot</button>
   </div>
 
+  <div id="currentFolder">
+    <strong>Root</strong>
+  </div>
+  <div>Select folder to upload:</div>
   <div id="container">
   </div>
   <div id="screenshot" class="hidden screenshot">
-    <img id="screenshot-preview" src="" class="screenshot-preview"/>
+    <img id="screenshot-preview" src="" class="screenshot-preview" />
+    <button id="upload_screenshot_btn" class="btn">Upload</button>
   </div>
   <div id="msg-success" class="hidden">
     <p class="success">Success</p>
   </div>
   <div id="msg-error" class="hidden">
-      <p class="error">Something went wrong. Try again later.</p>
+    <p class="error">Something went wrong. Try again later.</p>
   </div>
   <pre id="content" style="white-space: pre-wrap;"></pre>
 </body>
+
 </html>

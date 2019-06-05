@@ -92,10 +92,11 @@ text-align: center;
   height: auto;
 }
 
-.folder::before {
-  background-image: "./img/folder.png";
-}
-
 .folder {
+  padding-left: 10px;
+  background-image: url("/img/folder.png");
+  background-repeat: no-repeat;
+  background-position: 0;
+  background-size: 10px 10px;
   cursor: pointer;
 }

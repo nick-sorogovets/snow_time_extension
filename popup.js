@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS = {
 };
 
 function takeScreenshot() {
-  chrome.extension.onRequest.addListener(function(screenshot) {
+  chrome.extension.onRequest.addListener(function (screenshot) {
     console.log(screenshot.href);
     $("#screenshot-preview").attr('src', screenshot.href);
 
@@ -63,77 +63,116 @@ function takeScreenshot() {
 }
 
 
-function getListOfSubFolders(){
+function getListOfSubFolders(folderId = null) {
   const { domain } = settings;
 
-  const folderId = domain.substring(domain.lastIndexOf('/')+1);
+  folderId = folderId || domain.substring(domain.lastIndexOf('/') + 1);
 
   $.ajax({
-    url:'https://www.googleapis.com/drive/v3/files',
+    url: 'https://www.googleapis.com/drive/v3/files',
+    method: 'GET',
     crossDomain: true,
     headers: {
       'Authorization': 'Bearer ' + data.token
     },
-    method: 'GET',
     data: {
       corpora: 'user',
       q: `mimeType = 'application/vnd.google-apps.folder' and '${folderId}' in parents`,
       supportsTeamDrives: true
     }
   })
-  .done((response) => {
-    data ={
-      ...data,
-      folders: response.files
-    };
+    .done((response) => {
+      data = {
+        ...data,
+        folders: response.files
+      };
 
-    renderFolderList(response.files);
-  })
-  .fail(function( jqXHR, textStatus ) {
-    alert( "Request failed: " + textStatus );
-  });
+      renderFolderList(response.files);
+    })
+    .fail(function (jqXHR, textStatus) {
+      alert("Request failed: " + textStatus);
+    });
 
 }
 
-function renderFolderList(folders){
+function renderFolderList(folders) {
   $('#container').empty();
 
   folders.map(folder => {
-    $('#container').append(`<div data-id="${folder.id}" class="folder">${folder.name}</div>`);
+    let element = $(`<div data-id="${folder.id}" class="folder" onclick="selectSubFolderHandler">${folder.name}</div>`)
+    element.click(folder.id, (event) => {
+      data = {
+        ...data,
+        selectedFolder: folder
+      };
+      getListOfSubFolders(event.data);
+      updateSelectedFolder();
+    })
+    $('#container').append(element);
   });
 }
 
+function updateSelectedFolder() {
+  const { selectedFolder } = data;
+  if (selectedFolder) {
+    $('#currentFolder').append(` > <strong>${selectedFolder.name}</strong>`);
+  }
+}
+
+function uploadScreenshot(){
+  const { selectedFolder, href } = data;
+
+  $.ajax({
+    url: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=media',
+    method: 'POST',
+    crossDomain: true,
+    headers: {
+      'Authorization': 'Bearer ' + data.token,
+      'Content-Type': 'image/png'
+    },
+    data: href
+  }).done((response) => {
+
+    console.log(response);
+  }).fail(function (jqXHR, textStatus) {
+    alert("Request failed: " + textStatus);
+  });
+}
+
+/**
+ * Setting initialization
+ */
 function loadSettings() {
   chrome.storage.sync.get({
     domain: DEFAULT_SETTINGS.domain,
     username: DEFAULT_SETTINGS.username,
     api_key: DEFAULT_SETTINGS.api_key,
     client_id: DEFAULT_SETTINGS.client_id
-  }, function(items) {
-      settings = items;
-      handleClientLoad();
+  }, function (items) {
+    settings = items;
+    handleClientLoad();
   });
 
   chrome.webRequest.onHeadersReceived.addListener(
-    function(info) {
-        var headers = info.responseHeaders;
-        for (var i=headers.length-1; i>=0; --i) {
-            var header = headers[i].name.toLowerCase();
-            if (header == 'x-frame-options' || header == 'frame-options') {
-                headers.splice(i, 1); // Remove header
-            }
+    function (info) {
+      var headers = info.responseHeaders;
+      for (var i = headers.length - 1; i >= 0; --i) {
+        var header = headers[i].name.toLowerCase();
+        if (header == 'x-frame-options' || header == 'frame-options') {
+          headers.splice(i, 1); // Remove header
         }
-        return {responseHeaders: headers};
+      }
+      return { responseHeaders: headers };
     },
     {
-        urls: [ '*://*/*' ], // Pattern to match all http(s) pages
-        types: [ 'sub_frame' ]
+      urls: ['*://*/*'], // Pattern to match all http(s) pages
+      types: ['sub_frame']
     },
     ['blocking', 'responseHeaders']
   );
 }
 
-function getAuthToken(options){
+function getAuthToken(options) {
   chrome.identity.getAuthToken({ 'interactive': options.interactive }, options.callback);
 }
 /**
@@ -149,34 +188,34 @@ function handleClientLoad() {
 function getAuthTokenSilentCallback(token) {
   // Catch chrome error if user is not authorized.
   if (chrome.runtime.lastError) {
-      console.error(chrome.runtime.lastError.message);
-      showAuthNotification();
+    console.error(chrome.runtime.lastError.message);
+    showAuthNotification();
   } else {
-      data = {
-        ...data,
-        token
-      }
-      console.log('Authentication success ', token);
+    data = {
+      ...data,
+      token
+    }
+    console.log('Authentication success ', token);
   }
 }
 
 function showAuthNotification() {
   var options = {
-      'id': 'start-auth',
-      'iconUrl': 'icon.png',
-      'title': 'SNOW screenshot uploader extensopn',
-      'message': 'Click here to authorize access to GDrive',
+    'id': 'start-auth',
+    'iconUrl': 'icon.png',
+    'title': 'SNOW screenshot uploader extensopn',
+    'message': 'Click here to authorize access to GDrive',
   };
   createBasicNotification(options);
 }
 
 function createBasicNotification(options) {
   var notificationOptions = {
-      'type': 'basic',
-      'iconUrl': options.iconUrl, // Relative to Chrome dir or remote URL must be whitelisted in manifest.
-      'title': options.title,
-      'message': options.message,
-      'isClickable': true,
+    'type': 'basic',
+    'iconUrl': options.iconUrl, // Relative to Chrome dir or remote URL must be whitelisted in manifest.
+    'title': options.title,
+    'message': options.message,
+    'isClickable': true,
   };
   chrome.notifications.create(options.id, notificationOptions, function (notificationId) { });
 }
@@ -189,14 +228,14 @@ function createBasicNotification(options) {
 function getAuthTokenInteractiveCallback(token) {
   // Catch chrome error if user is not authorized.
   if (chrome.runtime.lastError) {
-      console.error(chrome.runtime.lastError);
-      showAuthNotification();
+    console.error(chrome.runtime.lastError);
+    showAuthNotification();
   } else {
-     data = {
-       ...data,
-       token
-     }
-     console.log('Authentication success', token);
+    data = {
+      ...data,
+      token
+    }
+    console.log('Authentication success', token);
   }
 }
 
@@ -207,7 +246,7 @@ function handleAuthClick(event) {
   getAuthTokenInteractive();
 }
 
-function getAuthTokenInteractive(){
+function getAuthTokenInteractive() {
   getAuthToken({
     interactive: true,
     callback: getAuthTokenInteractiveCallback
@@ -254,6 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
   callApiButton.addEventListener('click', () => {
     getListOfSubFolders();
   })
+
+  const uploadButton = document.getElementById('upload_screenshot_btn');
+  uploadButton.addEventListener('click', () => {
+    uploadScreenshot();
+  });
 
 
   //Load Settings
