@@ -9,7 +9,7 @@ let settings = {};
 let data = {};
 
 const DEFAULT_SETTINGS = {
-  client_id: '384905528545-odq6f69luso57hjce3qbob32qe5a1qe4.apps.googleusercontent.com',
+  client_id: '384905528545-qdgr4vg5g577uh5rrv8apj2b3v54bj68.apps.googleusercontent.com',
   api_key: 'AIzaSyAnbGg5cnqwbLF-6HqXeQYhEwAKINL1GsE',
   domain: '',
   username: '',
@@ -39,6 +39,7 @@ function takeScreenshot() {
     console.log(filename);
 
     data = {
+      ...data,
       href: screenshot.href,
       filename: filename
     };
@@ -61,27 +62,10 @@ function takeScreenshot() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const btnGetData = document.getElementById('btn-get-data');
-  btnGetData.addEventListener('click', () => {
-    takeScreenshot();
-  });
 
- 
-
-  const authorizeButton = document.getElementById('authorize_button');
-  authorizeButton.addEventListener('click', () => {
-    handleAuthClick();
-  })
-  const signoutButton = document.getElementById('signout_button');
-  signoutButton.addEventListener('click', () => {
-    handleSignoutClick();
-  })
-
-
-
-  loadSettings();
-})
+function getListOfSubFolders(){
+  
+}
 
 function loadSettings() {
   chrome.storage.sync.get({
@@ -120,7 +104,6 @@ function getAuthToken(options){
  *  On load, called to load the auth2 library and API client library.
  */
 function handleClientLoad() {
-  //gapi.load('client:auth2', initClient);
   getAuthToken({
     'interactive': false,
     'callback': getAuthTokenSilentCallback,
@@ -133,8 +116,11 @@ function getAuthTokenSilentCallback(token) {
       console.error(chrome.runtime.lastError.message);
       showAuthNotification();
   } else {
-      console.log(token);
-      updateLabelCount(token);
+      data = {
+        ...data,
+        token
+      }
+      console.log('Authentication success ', token);
   }
 }
 
@@ -170,52 +156,11 @@ function getAuthTokenInteractiveCallback(token) {
       console.error(chrome.runtime.lastError);
       showAuthNotification();
   } else {
-    alert(token);
-  }
-}
-
-/**
- *  Initializes the API client library and sets up sign-in state
- *  listeners.
- */
-function initClient() {
-  console.log('Init client Started');
-  const params = {
-    apiKey: settings.api_key,
-    clientId: settings.client_id,
-    discoveryDocs: DISCOVERY_DOCS,
-    scope: SCOPES
-  };
-  console.log(params);
-  gapi.client.init(params)
-  .then(function() {
-    console.log('Client initialized');
-    // Listen for sign-in state changes.
-    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-
-    // Handle the initial sign-in state.
-    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-  }, function (error){
-    console.error(error);
-  });
-  
-
-}
-
-/**
- *  Called when the signed in status changes, to update the UI
- *  appropriately. After a sign-in, the API is called.
- */
-function updateSigninStatus(isSignedIn) {
-  const authorizeButton = document.getElementById('authorize_button');
-  const signoutButton = document.getElementById('signout_button');
-  if (isSignedIn) {
-    authorizeButton.style.display = 'none';
-    signoutButton.style.display = 'block';
-    listFiles();
-  } else {
-    authorizeButton.style.display = 'block';
-    signoutButton.style.display = 'none';
+     data = {
+       ...data,
+       token
+     }
+     console.log('Authentication success', token);
   }
 }
 
@@ -223,50 +168,14 @@ function updateSigninStatus(isSignedIn) {
  *  Sign in the user upon button click.
  */
 function handleAuthClick(event) {
+  getAuthTokenInteractive();
+}
+
+function getAuthTokenInteractive(){
   getAuthToken({
     interactive: true,
     callback: getAuthTokenInteractiveCallback
   })
-}
-
-/**
- *  Sign out the user upon button click.
- */
-function handleSignoutClick(event) {
-  gapi.auth2.getAuthInstance().signOut();
-}
-
-/**
- * Append a pre element to the body containing the given message
- * as its text node. Used to display the results of the API call.
- *
- * @param {string} message Text to be placed in pre element.
- */
-function appendPre(message) {
-  var pre = document.getElementById('content');
-  var textContent = document.createTextNode(message + '\n');
-  pre.appendChild(textContent);
-}
-
-/**
- * Print files.
- */
-function listFiles() {
-  gapi.client.drive.files.list({
-    'pageSize': 10,
-    'fields': "nextPageToken, files(id, name)"
-  }).then(function(response) {
-    appendPre('Files:');
-    var files = response.result.files;
-    if (files && files.length > 0) {
-      for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        appendPre(file.name + ' (' + file.id + ')');
-      }
-    } else {
-      appendPre('No files found.');
-    }
-  });
 }
 
 /**
@@ -275,7 +184,7 @@ function listFiles() {
 function notificationClicked(notificationId) {
   // User clicked on notification to start auth flow.
   if (notificationId === 'start-auth') {
-    handleAuthClick();
+    getAuthTokenInteractive();
   }
   clearNotification(notificationId);
 }
@@ -289,8 +198,26 @@ function clearNotification(notificationId) {
   chrome.notifications.clear(notificationId, function (wasCleared) { });
 }
 
-
 /**
  * Wire up Chrome event listeners.
  */
 chrome.notifications.onClicked.addListener(notificationClicked);
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnGetData = document.getElementById('btn-get-data');
+  btnGetData.addEventListener('click', () => {
+    takeScreenshot();
+  });
+  const authorizeButton = document.getElementById('authorize_button');
+  authorizeButton.addEventListener('click', () => {
+    handleAuthClick();
+  })
+  const signoutButton = document.getElementById('signout_button');
+  signoutButton.addEventListener('click', () => {
+    handleSignoutClick();
+  })
+
+
+  //Load Settings
+  loadSettings();
+})
