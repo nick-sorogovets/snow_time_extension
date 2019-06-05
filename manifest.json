@@ -1,15 +1,17 @@
 {
   "manifest_version": 2,
-
   "name": "SNOW screenshot extension",
   "description": "This extension allows the user take screenshot of the page and store it in the appropriate google drive location",
-  "version": "1.0",
-  "browser_action": {
-    "default_icon": "icon.png",
-    "default_popup": "popup.html"
+  "version": "0.0.0.1",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
   },
   "permissions": [
     "storage",
+    "identity",
+    "notifications",
     "webRequest",
     "webRequestBlocking",
     "*://*.google.com/",
@@ -19,16 +21,32 @@
     "https://*/*",
     "chrome://favicon/"
   ],
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
-      "matches": ["https://coxauto.service-now.com/time*/**"],
-      "js": ["jquery.min.js", "html2canvas.min.js"],
+      "matches": [
+        "https://coxauto.service-now.com/time*/**"
+      ],
+      "js": [
+        "html2canvas.min.js"
+      ],
       "run_at": "document_idle"
     }
   ],
-  "content_security_policy":"script-src 'self' https://apis.google.com; object-src 'self'",
+  "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
   "background": {
-    "scripts": ["jquery.min.js"]
+    "scripts": [
+      "jquery.min.js"
+    ]
   },
-  "options_page": "options.html"
+  "options_page": "options.html",
+  "oauth2": {
+    "client_id": "384905528545-jcek023539jsr0c42dtbsldeaav37knb.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive"
+    ]
+  }
 }
