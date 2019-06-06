@@ -29,18 +29,18 @@ function takeScreenshot() {
 }
 
 function getIdFromUrl(url) {
-    return url.match(/[-\w]{25,}/);
+    return url.match(/[-\w]{25,}/)[0];
 }
 
 function getListOfSubFolders(folderId = null) {
     const { domain } = settings;
 
-    if(folderId === null){
-      $('#currentFolder').html('<strong>Root</strong>');
-      data = {
-        ...data,
-        selectedFolder: { id: getIdFromUrl(domain)}
-      };
+    if (folderId === null) {
+        $('#currentFolder').html('<strong>Root</strong>');
+        data = {
+            ...data,
+            selectedFolder: { id: getIdFromUrl(domain) }
+        };
     }
 
     folderId = folderId || getIdFromUrl(domain);
@@ -75,11 +75,7 @@ function renderFolderList(folders) {
     $('#folders_list').empty();
 
     folders.map(folder => {
-        let element = $(
-            `<li data-id="${folder.id}" class="folder">${
-                folder.name
-            }</li>`
-        );
+        let element = $(`<li data-id="${folder.id}" class="folder">${folder.name}</li>`);
         element.click(folder.id, event => {
             data = {
                 ...data,
