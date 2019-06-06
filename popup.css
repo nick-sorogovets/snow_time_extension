@@ -1,5 +1,6 @@
 body {
   margin: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -7,13 +8,13 @@ h1 {
   font-size: 15px;
 }
 
-.container {
+.folders_list {
   align-items: top;
   display: flex;
   justify-content: space-between;
 }
 
-.container > .flex-item {
+.folders_list > .flex-item {
   flex: auto;
 }
 .flex-item > h4 {
@@ -84,7 +85,13 @@ text-align: center;
 }
 
 .success {
+  color: blue;
+  font-size: 20px;
+}
 
+.error {
+  color: red;
+  font-size: 20px;
 }
 
 .screenshot-preview {
