@@ -8,9 +8,8 @@ const DEFAULT_SETTINGS = {
 };
 
 function takeScreenshot() {
-    chrome.extension.onRequest.addListener(function(screenshot) {
-        console.log(screenshot.href);
-        $('#screenshot-preview').attr('src', screenshot.href);
+    chrome.tabs.captureVisibleTab(null, { format: 'png' }, dataUrl => {
+        $('#screenshot-preview').attr('src', dataUrl);
 
         $('#screenshot').removeClass('hidden');
         var today = new Date();
@@ -23,21 +22,10 @@ function takeScreenshot() {
 
         data = {
             ...data,
-            href: screenshot.href,
+            href: dataUrl,
             filename: filename
         };
     });
-    chrome.tabs.executeScript(
-        null,
-        {
-            file: 'html2canvas.min.js'
-        },
-        () => {
-            chrome.tabs.executeScript(null, {
-                file: 'parse-data.js'
-            });
-        }
-    );
 }
 
 function getIdFromUrl(url) {
@@ -46,6 +34,14 @@ function getIdFromUrl(url) {
 
 function getListOfSubFolders(folderId = null) {
     const { domain } = settings;
+
+    if(folderId === null){
+      $('#currentFolder').html('<strong>Root</strong>');
+      data = {
+        ...data,
+        selectedFolder: { id: getIdFromUrl(domain)}
+      };
+    }
 
     folderId = folderId || getIdFromUrl(domain);
 
@@ -80,9 +76,9 @@ function renderFolderList(folders) {
 
     folders.map(folder => {
         let element = $(
-            `<div data-id="${folder.id}" class="folder" onclick="selectSubFolderHandler">${
+            `<li data-id="${folder.id}" class="folder">${
                 folder.name
-            }</div>`
+            }</li>`
         );
         element.click(folder.id, event => {
             data = {
@@ -169,24 +165,6 @@ function loadSettings() {
             handleClientLoad();
         }
     );
-
-    // chrome.webRequest.onHeadersReceived.addListener(
-    //     function(info) {
-    //         var headers = info.responseHeaders;
-    //         for (var i = headers.length - 1; i >= 0; --i) {
-    //             var header = headers[i].name.toLowerCase();
-    //             if (header == 'x-frame-options' || header == 'frame-options') {
-    //                 headers.splice(i, 1); // Remove header
-    //             }
-    //         }
-    //         return { responseHeaders: headers };
-    //     },
-    //     {
-    //         urls: ['*://*/*'], // Pattern to match all http(s) pages
-    //         types: ['sub_frame']
-    //     },
-    //     ['blocking', 'responseHeaders']
-    // );
 }
 
 function getAuthToken(options) {

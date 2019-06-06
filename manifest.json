@@ -25,23 +25,7 @@
     "default_icon": "icon.png",
     "default_popup": "popup.html"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://coxauto.service-now.com/time*/**"
-      ],
-      "js": [
-        "html2canvas.min.js"
-      ],
-      "run_at": "document_idle"
-    }
-  ],
   "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
-  "background": {
-    "scripts": [
-      "jquery.min.js"
-    ]
-  },
   "options_page": "options.html",
   "oauth2": {
     "client_id": "384905528545-jcek023539jsr0c42dtbsldeaav37knb.apps.googleusercontent.com",
