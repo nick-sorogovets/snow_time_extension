@@ -8,6 +8,10 @@ h1 {
   font-size: 15px;
 }
 
+ul {
+  padding: 0;
+}
+
 .folders_list {
   align-items: top;
   display: flex;
@@ -31,14 +35,16 @@ text-align: center;
   cursor: pointer;
   border: 1px solid transparent;
   white-space: nowrap;
-  padding: 8px 16px;
-  font-size: 15px;
+  padding: 6px 12px;
+  font-size: 14px;
   line-height: 1.42857143;
-  border-radius: 0;
+  border-radius: 4px;
   -webkit-user-select: none;
   user-select: none;
-  color: #ffffff;
-  background-color: #4e5d6c;
+  color: #fff;
+  background-color: #428bca;
+  border-color: #357ebd;
+
 }
 
 .btn-login {
@@ -56,21 +62,23 @@ text-align: center;
 .btn.active.focus {
   outline: 5px auto -webkit-focus-ring-color;
   outline-offset: -2px;
+  color: #fff;
+    background-color: #3071a9;
+    border-color: #285e8e;
 }
 
 .btn:hover {
-  color: #ffffff;
-  background-color: #39444e;
-  border-color: rgba(0, 0, 0, 0);
+  color: #fff;
+  background-color: #3071a9;
+  border-color: #285e8e;
 }
 
 .btn:focus,
 .btn.focus {
-  color: #ffffff;
   text-decoration: none;
-  background-color: #39444e;
-  border-color: rgba(0, 0, 0, 0);
-}
+  color: #fff;
+  background-color: #3071a9;
+  border-color: #193c5a;}
 
 .btn:active,
 .btn.active {
@@ -78,6 +86,14 @@ text-align: center;
   background-image: none;
   -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+}
+
+.btn.screenshot {
+  padding-left: 22px;
+  background-image: url('img/screenshot.png');
+  background-position: 0;
+  background-repeat: no-repeat;
+  background-size: 20px 20px;
 }
 
 .hidden {
@@ -105,5 +121,9 @@ text-align: center;
   background-repeat: no-repeat;
   background-position: 0;
   background-size: 10px 10px;
+}
+
+.folder:hover {
   cursor: pointer;
+  text-decoration: underline;
 }

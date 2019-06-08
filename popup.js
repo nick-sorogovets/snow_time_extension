@@ -135,11 +135,11 @@ function uploadScreenshot() {
     })
         .done(response => {
             console.log(response);
-            $('#msg-success').removeClass('hidden');
+            $('#msg-success').show();
         })
         .fail(function(jqXHR, textStatus) {
             alert('Request failed: ' + textStatus);
-            $('#msg-error').removeClass('hidden');
+            $('#msg-error').show();
         });
 }
 

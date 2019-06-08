@@ -19,24 +19,24 @@
             <button id="authorize_button" class="btn">Authorize</button>
             <button id="call_api_button" class="btn">Specify folder</button>
         </div>
-        <div>Select folder to upload:</div>
+        <div>Folder to upload:</div>
         <div id="currentFolder">
             <strong>Root</strong>
         </div>
         <ul id="folders_list"></ul>
         <div>
-            <button id="btn-get-data" class="btn">Take screenshot</button>
+            <button id="btn-get-data" class="btn screenshot">Capture</button>
         </div>
-        <div id="screenshot" class="hidden screenshot">
+        <div id="screenshot" class="hidden">
             <img id="screenshot-preview" src="" class="screenshot-preview" />
             <div>
                 <button id="upload_screenshot_btn" class="btn">Upload</button>
             </div>
         </div>
-        <div id="msg-success" class="hidden">
+        <div id="msg-success" style="display: none">
             <p class="success">Success</p>
         </div>
-        <div id="msg-error" class="hidden">
+        <div id="msg-error" style="display: none">
             <p class="error">Something went wrong. Try again later.</p>
         </div>
     </body>
