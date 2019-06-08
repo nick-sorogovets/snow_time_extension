@@ -5,39 +5,47 @@
  value "popup.html".
  -->
 <html>
-    <head>
-        <title>SNOW Screenshot</title>
-        <link rel="stylesheet" href="popup.css" />
-        <script src="jquery.min.js"></script>
-        <script src="popup.js"></script>
-    </head>
 
-    <body>
-        <h3>SNOW Extension</h3>
-        <div>
-            <!--Add buttons to initiate auth sequence and sign out-->
-            <button id="authorize_button" class="btn">Authorize</button>
-            <button id="call_api_button" class="btn">Specify folder</button>
-        </div>
-        <div>Folder to upload:</div>
-        <div id="currentFolder">
-            <strong>Root</strong>
-        </div>
-        <ul id="folders_list"></ul>
-        <div>
-            <button id="btn-get-data" class="btn screenshot">Capture</button>
-        </div>
-        <div id="screenshot" class="hidden">
-            <img id="screenshot-preview" src="" class="screenshot-preview" />
-            <div>
-                <button id="upload_screenshot_btn" class="btn">Upload</button>
-            </div>
-        </div>
-        <div id="msg-success" style="display: none">
-            <p class="success">Success</p>
-        </div>
-        <div id="msg-error" style="display: none">
-            <p class="error">Something went wrong. Try again later.</p>
-        </div>
-    </body>
+<head>
+	<title>SNOW Screenshot</title>
+	<link rel="stylesheet" href="popup.css" />
+	<script src="jquery.min.js"></script>
+	<script src="popup.js"></script>
+</head>
+
+<body>
+	<h3>Snow screenshot extension</h3>
+	<div id="ajax-spinner">
+		<svg class="spinner" viewBox="0 0 50 50">
+			<circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+		</svg>
+	</div>
+	<div>
+		<!--Add buttons to initiate auth sequence and sign out-->
+		<button id="authorize_button" class="btn hidden">Authorize</button>
+		<button id="get_subfolders_button" class="btn get_folders">Specify folder</button>
+		<button id="take-screenshot-button" class="btn screenshot">Capture</button>
+	</div>
+	<div>Folder to upload:</div>
+	<div id="currentFolder">
+		<strong>Root</strong>
+	</div>
+	<ul id="folders_list"></ul>
+	<div>
+		
+	</div>
+	<div id="screenshot" class="hidden">
+		<img id="screenshot-preview" src="" class="screenshot-preview" />
+		<div>
+			<button id="upload_screenshot_button" class="btn upload">Upload</button>
+		</div>
+	</div>
+	<div id="msg-success" class="hidden">
+		<p class="success">Successfully uploaded</p>
+		<a id='view_link' href="#" class="view-link"></a>
+	</div>
+	<div id="msg-error" class="hidden">
+		<p class="error">Something went wrong. Try again later.</p>
+	</div>
+</body>
 </html>

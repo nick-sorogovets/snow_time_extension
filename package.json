@@ -1,27 +1,27 @@
 {
-  "name": "snow-screenshot-extension",
-  "version": "0.0.1",
-  "description": "Take screenshot from SNOW page to simplify developers life",
-  "main": "popup.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nick-sorogovets/snow_time_extension.git"
-  },
-  "keywords": [
-    "snow",
-    "screenshot",
-    "google-drive"
-  ],
-  "author": "Nick Sorogovets",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/nick-sorogovets/snow_time_extension/issues"
-  },
-  "homepage": "https://github.com/nick-sorogovets/snow_time_extension#readme",
-  "dependencies": {
-    "jquery": "^3.4.1"
-  }
+	"name": "snow-screenshot-extension",
+	"version": "0.0.1",
+	"description": "Take screenshot from SNOW page to simplify developers life",
+	"main": "popup.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nick-sorogovets/snow_time_extension.git"
+	},
+	"keywords": [
+		"snow",
+		"screenshot",
+		"google-drive"
+	],
+	"author": "Nick Sorogovets",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/nick-sorogovets/snow_time_extension/issues"
+	},
+	"homepage": "https://github.com/nick-sorogovets/snow_time_extension#readme",
+	"dependencies": {
+		"jquery": "^3.4.1"
+	}
 }
