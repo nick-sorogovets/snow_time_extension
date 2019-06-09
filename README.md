@@ -7,7 +7,8 @@ Snow screenshot uploader
 
 # Goal
 
-Snow screenshot uploader needed to make screenshot of currecnt page and upload it to specific folder on Google drive. That extension also allow to select directory defore upload.
+Snow screenshot uploader needed to make screenshot of current page and upload it to specific folder on Google drive.
+That extension also allow to select directory defore upload.
 
 ## Installation
 
