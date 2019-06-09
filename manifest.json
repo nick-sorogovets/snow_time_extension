@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "SNOW screenshot extension",
   "description": "This extension allows the user take screenshot of the page and store it in the appropriate google drive location",
-  "version": "0.0.0.1",
+  "version": "0.0.1",
   "icons": {
     "16": "icon.png",
     "48": "icon.png",
@@ -12,8 +12,6 @@
     "storage",
     "identity",
     "notifications",
-    "webRequest",
-    "webRequestBlocking",
     "*://*.google.com/",
     "activeTab",
     "tabs",

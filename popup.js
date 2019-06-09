@@ -20,7 +20,7 @@ const CONSTANTS = {
 		UPLOAD_BUTTON: '#upload_screenshot_button'
 	},
 	APIS: {
-		GET_FILES: 'https://www.googleapis.com/drive/v3/files',		
+		GET_FILES: 'https://www.googleapis.com/drive/v3/files',
 		MULTIPART_UPLOAD: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
 	}
 
@@ -178,7 +178,7 @@ function uploadScreenshot() {
 			$('#msg-error').show();
 		})
 		.always(() => {
-		
+
 		});
 }
 
@@ -192,30 +192,30 @@ function getFileUrls() {
 			Authorization: 'Bearer ' + data.token
 		}
 	})
-	.done(response => {
+		.done(response => {
 
-		data = {
-			...data,
-			uploadedFile: {
-				...uploadedFile,
-				viewLink: response.webViewLink,
-			}
-		};
+			data = {
+				...data,
+				uploadedFile: {
+					...uploadedFile,
+					viewLink: response.webViewLink,
+				}
+			};
 
-		$('#view_link').attr('href', response.webViewLink);
-		$('#view_link').click(() => {
-			chrome.tabs.create({
-				url:  response.webViewLink
-			});
+			$('#view_link').attr('href', response.webViewLink);
+			$('#view_link').click(() => {
+				chrome.tabs.create({
+					url: response.webViewLink
+				});
+			})
 		})
-	})
-	.fail(function (jqXHR, textStatus) {
-		alert('Request failed: ' + textStatus);
-		$('#msg-error').show();
-	})
-	.always(() => {
-		$(CONSTANTS.IDS.UPLOAD_BUTTON).enable();
-	})
+		.fail(function (jqXHR, textStatus) {
+			alert('Request failed: ' + textStatus);
+			$('#msg-error').show();
+		})
+		.always(() => {
+			$(CONSTANTS.IDS.UPLOAD_BUTTON).enable();
+		})
 
 }
 
