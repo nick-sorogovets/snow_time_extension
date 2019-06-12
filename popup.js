@@ -2,7 +2,6 @@ let settings = {};
 let data = {};
 
 const DEFAULT_SETTINGS = {
-	client_id: '384905528545-qdgr4vg5g577uh5rrv8apj2b3v54bj68.apps.googleusercontent.com',
 	folder_url: '',
 	username: ''
 };
@@ -17,17 +16,18 @@ const CONSTANTS = {
 		SCREENSHOT_CONTAINER: '#screenshot',
 		SCREENSHOT_PREVIEW: '#screenshot-preview',
 		FOLDER_LIST: '#folders_list',
-		UPLOAD_BUTTON: '#upload_screenshot_button'
+		UPLOAD_BUTTON: '#upload_screenshot_button',
+		OPTIONS_URL: '#options_url',
+		OPTIONS_ERROR: '#options_error'
 	},
 	APIS: {
 		GET_FILES: 'https://www.googleapis.com/drive/v3/files',
 		MULTIPART_UPLOAD: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
 	}
-
-}
+};
 
 function takeScreenshot() {
-	$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).disable();
+	$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).setBusy(true);
 	chrome.tabs.captureVisibleTab(null, { format: 'png' }, dataUrl => {
 		$(CONSTANTS.IDS.SCREENSHOT_PREVIEW).attr('src', dataUrl);
 		$(CONSTANTS.IDS.SCREENSHOT_CONTAINER).show();
@@ -46,7 +46,7 @@ function takeScreenshot() {
 			filename: filename
 		};
 
-		$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).enable();
+		$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).setBusy(false);
 	});
 }
 
@@ -55,7 +55,7 @@ function getIdFromUrl(url) {
 }
 
 function getListOfSubFolders(folderId = null) {
-	$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).disable();
+	$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).setBusy(true);
 
 	const { folder_url } = settings;
 
@@ -90,11 +90,11 @@ function getListOfSubFolders(folderId = null) {
 
 			renderFolderList(response.files);
 		})
-		.fail(function (jqXHR, textStatus) {
+		.fail(function(jqXHR, textStatus) {
 			alert('Request failed: ' + textStatus);
 		})
 		.always(() => {
-			$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).enable();
+			$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).setBusy(false);
 		});
 }
 
@@ -123,7 +123,7 @@ function updateSelectedFolder() {
 }
 
 function uploadScreenshot() {
-	$(CONSTANTS.IDS.UPLOAD_BUTTON).disable();
+	$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(true);
 	const { selectedFolder, href, filename } = data;
 
 	const base64Data = href.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
@@ -173,13 +173,12 @@ function uploadScreenshot() {
 			$('#view_link').html(response.name);
 			getFileUrls();
 		})
-		.fail(function (jqXHR, textStatus) {
+		.fail(function(jqXHR, textStatus) {
 			alert('Request failed: ' + textStatus);
 			$('#msg-error').show();
+			$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
 		})
-		.always(() => {
-
-		});
+		.always(() => {});
 }
 
 function getFileUrls() {
@@ -193,12 +192,11 @@ function getFileUrls() {
 		}
 	})
 		.done(response => {
-
 			data = {
 				...data,
 				uploadedFile: {
 					...uploadedFile,
-					viewLink: response.webViewLink,
+					viewLink: response.webViewLink
 				}
 			};
 
@@ -207,16 +205,15 @@ function getFileUrls() {
 				chrome.tabs.create({
 					url: response.webViewLink
 				});
-			})
+			});
 		})
-		.fail(function (jqXHR, textStatus) {
+		.fail(function(jqXHR, textStatus) {
 			alert('Request failed: ' + textStatus);
 			$('#msg-error').show();
 		})
 		.always(() => {
-			$(CONSTANTS.IDS.UPLOAD_BUTTON).enable();
-		})
-
+			$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
+		});
 }
 
 /**
@@ -228,7 +225,13 @@ function loadSettings() {
 			folder_url: DEFAULT_SETTINGS.folder_url,
 			username: DEFAULT_SETTINGS.username
 		},
-		function (items) {
+		function(items) {
+			const { folder_url, username } = items;
+
+			if (!folder_url || !username) {
+				showOptionError();
+			}
+
 			settings = items;
 			data = {
 				...data,
@@ -237,6 +240,18 @@ function loadSettings() {
 			handleClientLoad();
 		}
 	);
+}
+
+function showOptionError() {
+	let optionUrl = chrome.extension.getURL('options.html');
+	optionUrl = `${optionUrl}?origin=popup.html`;
+	$(CONSTANTS.IDS.OPTIONS_URL).attr('href', optionUrl);
+	$(CONSTANTS.IDS.OPTIONS_ERROR).show();
+
+	//Disable controls until user is configure settings
+	$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).disable();
+	$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).disable();
+	$(CONSTANTS.AUTHORIZE_BTN).disable();
 }
 
 function getAuthToken(options) {
@@ -286,7 +301,7 @@ function createBasicNotification(options) {
 		message: options.message,
 		isClickable: true
 	};
-	chrome.notifications.create(options.id, notificationOptions, function (notificationId) { });
+	chrome.notifications.create(options.id, notificationOptions, function(notificationId) {});
 }
 
 /**
@@ -341,7 +356,7 @@ function notificationClicked(notificationId) {
  * @param {string} notificationId - Id of notification to clear.
  */
 function clearNotification(notificationId) {
-	chrome.notifications.clear(notificationId, function (wasCleared) { });
+	chrome.notifications.clear(notificationId, function(wasCleared) {});
 }
 
 /**
@@ -375,15 +390,22 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 $.fn.extend({
-	disable: function () {
-		$(this).prop("disabled", true);
-		$(this).showSpinner();
+	setBusy: function(isBusy = false) {
+		if (isBusy === true) {
+			$(this).disable();
+			$(this).showSpinner();
+		} else {
+			$(this).enable();
+			$(this).hideSpinner();
+		}
 	},
-	enable: function () {
+	disable: function() {
+		$(this).prop('disabled', true);
+	},
+	enable: function() {
 		$(this).prop('disabled', false);
-		$(this).hideSpinner();
 	},
-	showSpinner: function () {
+	showSpinner: function() {
 		const position = $(this).position();
 		const elementWidth = $(this).outerWidth(true);
 		const elementHeight = $(this).outerHeight(true);
@@ -399,7 +421,7 @@ $.fn.extend({
 
 		$(this).css({ paddingRight: 42 });
 	},
-	hideSpinner: function () {
+	hideSpinner: function() {
 		$('#ajax-spinner').hide();
 		$(this).css({ paddingRight: 12 });
 	}

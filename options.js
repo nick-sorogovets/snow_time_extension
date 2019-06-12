@@ -20,9 +20,21 @@ function save_options(event) {
 
 			setTimeout(function () {
 				$('#status').text('');
-			}, 2000);
+				redirectToOrigin();
+			}, 1000);
 		}
 	);
+}
+
+function redirectToOrigin() {
+	const params = new URLSearchParams(document.location.search);
+
+	var origin = params.get('origin');
+	if(origin){
+		window.location = origin;
+	} else {
+		window.close();
+	}
 }
 
 // Restores extension settings

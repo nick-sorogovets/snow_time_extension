@@ -1,34 +1,33 @@
 {
-  "manifest_version": 2,
-  "name": "SNOW screenshot extension",
-  "description": "This extension allows the user take screenshot of the page and store it in the appropriate google drive location",
-  "version": "0.0.1",
-  "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
-  },
-  "permissions": [
-    "storage",
-    "identity",
-    "notifications",
-    "*://*.google.com/",
-    "activeTab",
-    "tabs",
-    "http://*/*",
-    "https://*/*",
-    "chrome://favicon/"
-  ],
-  "browser_action": {
-    "default_icon": "icon.png",
-    "default_popup": "popup.html"
-  },
-  "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
-  "options_page": "options.html",
-  "oauth2": {
-    "client_id": "384905528545-jcek023539jsr0c42dtbsldeaav37knb.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/drive"
-    ]
-  }
+	"manifest_version": 2,
+	"name": "SNOW screenshot extension",
+	"description": "This extension allows the user take screenshot of the page and store it in the appropriate google drive location",
+	"version": "0.0.2",
+	"icons": {
+		"16": "icon.png",
+		"48": "icon.png",
+		"128": "icon.png"
+	},
+	"permissions": [
+		"storage",
+		"identity",
+		"notifications",
+		"*://*.google.com/",
+		"activeTab",
+		"tabs",
+		"http://*/*",
+		"https://*/*",
+		"chrome://favicon/"
+	],
+	"browser_action": {
+		"default_icon": "icon.png",
+		"default_popup": "popup.html"
+	},
+	"content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
+	"web_accessible_resources": ["options.html"],
+	"options_page": "options.html",
+	"oauth2": {
+		"client_id": "384905528545-jcek023539jsr0c42dtbsldeaav37knb.apps.googleusercontent.com",
+		"scopes": ["https://www.googleapis.com/auth/drive"]
+	}
 }
