@@ -21,6 +21,10 @@
 				min-width: 500px;
 				display: table-cell;
 			}
+
+			h4 {
+				margin: 0;
+			}
 		</style>
 	</head>
 
@@ -45,6 +49,15 @@
 						placeholder="Enter Username Prefix here"
 						required
 					/>
+				</div>
+				<h4>SNOW automation settings:</h4>
+				<div>
+					<label for="auto_screenshot">Auto-create screenshot on pop-up open:</label>
+					<input id="auto_screenshot" type="checkbox"/>
+				</div>
+				<div>
+					<label for="auto_upload">Auto-upload and select folder on Submit:</label>
+					<input id="auto_upload" type="checkbox"/>
 				</div>
 				<div id="status"></div>
 				<div>

@@ -3,7 +3,9 @@ let data = {};
 
 const DEFAULT_SETTINGS = {
 	folder_url: '',
-	username: ''
+	username: '',
+	auto_screenshot: false,
+	auto_upload: false,
 };
 
 const CONSTANTS = {
@@ -223,10 +225,12 @@ function loadSettings() {
 	chrome.storage.sync.get(
 		{
 			folder_url: DEFAULT_SETTINGS.folder_url,
-			username: DEFAULT_SETTINGS.username
+			username: DEFAULT_SETTINGS.username,
+			auto_screenshot: DEFAULT_SETTINGS.auto_screenshot,
+			auto_upload: DEFAULT_SETTINGS.auto_upload
 		},
 		function(items) {
-			const { folder_url, username } = items;
+			const { folder_url, username, auto_screenshot } = items;
 
 			if (!folder_url || !username) {
 				showOptionError();
@@ -238,6 +242,10 @@ function loadSettings() {
 				selectedFolder: { id: getIdFromUrl(items.folder_url) }
 			};
 			handleClientLoad();
+
+			if(auto_screenshot) {
+				takeScreenshot();
+			}
 		}
 	);
 }
