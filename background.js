@@ -72,21 +72,18 @@ function subscribeOnSubmitClick() {
 				}
 				break;
 			case 'submit_pressed':
-				CaptureScreenshot()
-					.then(dataUrl => {
-						const today = new Date();
-						const now = today.toISOString().substring(0, 10);
-						const filename = `${settings.username}_${now}.png`;
-						const { selectedFolder } = data;
-						const options = {
-							folderId: selectedFolder.id,
-							token: data.token,
-							dataUrl,
-							filename
-						};
+				const today = new Date();
+				const now = today.toISOString().substring(0, 10);
+				const filename = `${settings.username}_${now}.png`;
+				const { selectedFolder } = data;
+				const options = {
+					folderId: selectedFolder.id,
+					token: data.token,
+					dataUrl: request.dataUrl,
+					filename
+				};
 
-						return UploadScreenshot(options);
-					})
+				UploadScreenshot(options)
 					.then(response => {
 						console.log(response);
 
@@ -96,6 +93,9 @@ function subscribeOnSubmitClick() {
 						};
 
 						sendResponse(response);
+					})
+					.catch((jqHXR, textStatus) => {
+						alert('Request failed: ' + textStatus);
 					});
 				break;
 			default:

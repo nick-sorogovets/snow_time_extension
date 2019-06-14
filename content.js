@@ -8,18 +8,21 @@
 		);
 		if (snow_submit_button && weekName) {
 			snow_submit_button.addEventListener('click', () => {
-				setTimeout(() => {
-					const msg = {
-						action: 'submit_pressed',
-						week_name: weekName.innerText
-					};
-					chrome.runtime.sendMessage(msg, function(response) {
-						alert(`Thank you for upload screenshot '${response.name}'`);
-					});
-				}, 500);
+				CaptureScreenshot().then(dataUrl => {
+					setTimeout(() => {
+						const msg = {
+							action: 'submit_pressed',
+							week_name: weekName.innerText,
+							dataUrl
+						};
+						chrome.runtime.sendMessage(msg, function(response) {
+							alert(`Thank you for upload screenshot '${response.name}'`);
+						});
+					}, 500);
+				});
 			});
 		}
-		if(weekName) {
+		if (weekName) {
 			const initMessage = {
 				action: 'init',
 				week_name: weekName.innerText
@@ -31,9 +34,16 @@
 	};
 
 	document.onreadystatechange = () => {
-		if(document.readyState === 'complete'){
+		if (document.readyState === 'complete') {
 			init();
 		}
-	}
+	};
 
+	function CaptureScreenshot() {
+		return new Promise((resolve, reject) => {
+			chrome.tabs.captureVisibleTab(null, { format: 'png' }, dataUrl => {
+				resolve(dataUrl);
+			});
+		});
+	}
 })(document);
