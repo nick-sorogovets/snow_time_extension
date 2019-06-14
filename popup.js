@@ -1,3 +1,11 @@
+import {
+	GetSubFolderListPromise,
+	getIdFromUrl,
+	getAuthToken,
+	CaptureScreenshot,
+	UploadScreenshot
+} from './js/api.js';
+
 let settings = {};
 let data = {};
 
@@ -5,7 +13,7 @@ const DEFAULT_SETTINGS = {
 	folder_url: '',
 	username: '',
 	auto_screenshot: false,
-	auto_upload: false,
+	auto_upload: false
 };
 
 const CONSTANTS = {
@@ -30,7 +38,8 @@ const CONSTANTS = {
 
 function takeScreenshot() {
 	$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).setBusy(true);
-	chrome.tabs.captureVisibleTab(null, { format: 'png' }, dataUrl => {
+
+	CaptureScreenshot().then(dataUrl => {
 		$(CONSTANTS.IDS.SCREENSHOT_PREVIEW).attr('src', dataUrl);
 		$(CONSTANTS.IDS.SCREENSHOT_CONTAINER).show();
 
@@ -52,10 +61,6 @@ function takeScreenshot() {
 	});
 }
 
-function getIdFromUrl(url) {
-	return url.match(/[-\w]{25,}/)[0];
-}
-
 function getListOfSubFolders(folderId = null) {
 	$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).setBusy(true);
 
@@ -69,33 +74,18 @@ function getListOfSubFolders(folderId = null) {
 		};
 	}
 
-	folderId = folderId || getIdFromUrl(folder_url);
-
-	$.ajax({
-		url: CONSTANTS.APIS.GET_FILES,
-		method: 'GET',
-		crossDomain: true,
-		headers: {
-			Authorization: 'Bearer ' + data.token
-		},
-		data: {
-			corpora: 'user',
-			q: `mimeType = 'application/vnd.google-apps.folder' and '${folderId}' in parents`,
-			supportsTeamDrives: true
-		}
-	})
-		.done(response => {
+	GetSubFolderListPromise(folder_url, data.token, folderId)
+		.then(folders => {
 			data = {
 				...data,
-				folders: response.files
+				folders
 			};
-
-			renderFolderList(response.files);
+			renderFolderList(folders);
 		})
-		.fail(function(jqXHR, textStatus) {
+		.catch((jqXHR, textStatus, errorThrown) => {
 			alert('Request failed: ' + textStatus);
 		})
-		.always(() => {
+		.then(() => {
 			$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).setBusy(false);
 		});
 }
@@ -128,42 +118,15 @@ function uploadScreenshot() {
 	$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(true);
 	const { selectedFolder, href, filename } = data;
 
-	const base64Data = href.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
-
-	const metadata = {
-		name: filename,
-		mimeType: 'image/png',
-		parents: [selectedFolder.id]
+	const options = {
+		folderId: selectedFolder.id,
+		token: data.token,
+		dataUrl: href,
+		filename
 	};
 
-	const boundary = '-------314159265358979323846';
-	const delimiter = '\r\n--' + boundary + '\r\n';
-	const close_delimiter = '\r\n--' + boundary + '--';
-	const contentType = metadata.mimeType || 'application/octet-stream';
-	const multipartRequestBody =
-		delimiter +
-		'Content-Type: application/json\r\n\r\n' +
-		JSON.stringify(metadata) +
-		delimiter +
-		'Content-Type: ' +
-		contentType +
-		'\r\n' +
-		'Content-Transfer-Encoding: base64\r\n' +
-		'\r\n' +
-		base64Data +
-		close_delimiter;
-
-	$.ajax({
-		url: CONSTANTS.APIS.MULTIPART_UPLOAD,
-		method: 'POST',
-		crossDomain: true,
-		headers: {
-			Authorization: 'Bearer ' + data.token,
-			'Content-Type': `multipart/related; boundary=${boundary}`
-		},
-		data: multipartRequestBody
-	})
-		.done(response => {
+	UploadScreenshot(options)
+		.then(response => {
 			console.log(response);
 
 			data = {
@@ -175,12 +138,65 @@ function uploadScreenshot() {
 			$('#view_link').html(response.name);
 			getFileUrls();
 		})
-		.fail(function(jqXHR, textStatus) {
+		.catch((jqXHR, textStatus) => {
 			alert('Request failed: ' + textStatus);
 			$('#msg-error').show();
 			$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
-		})
-		.always(() => {});
+		});
+
+	// const base64Data = href.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
+
+	// const metadata = {
+	// 	name: filename,
+	// 	mimeType: 'image/png',
+	// 	parents: [selectedFolder.id]
+	// };
+
+	// const boundary = '-------314159265358979323846';
+	// const delimiter = '\r\n--' + boundary + '\r\n';
+	// const close_delimiter = '\r\n--' + boundary + '--';
+	// const contentType = metadata.mimeType || 'application/octet-stream';
+	// const multipartRequestBody =
+	// 	delimiter +
+	// 	'Content-Type: application/json\r\n\r\n' +
+	// 	JSON.stringify(metadata) +
+	// 	delimiter +
+	// 	'Content-Type: ' +
+	// 	contentType +
+	// 	'\r\n' +
+	// 	'Content-Transfer-Encoding: base64\r\n' +
+	// 	'\r\n' +
+	// 	base64Data +
+	// 	close_delimiter;
+
+	// $.ajax({
+	// 	url: CONSTANTS.APIS.MULTIPART_UPLOAD,
+	// 	method: 'POST',
+	// 	crossDomain: true,
+	// 	headers: {
+	// 		Authorization: 'Bearer ' + data.token,
+	// 		'Content-Type': `multipart/related; boundary=${boundary}`
+	// 	},
+	// 	data: multipartRequestBody
+	// })
+	// 	.done(response => {
+	// 		console.log(response);
+
+	// 		data = {
+	// 			...data,
+	// 			uploadedFile: response
+	// 		};
+
+	// 		$('#msg-success').show();
+	// 		$('#view_link').html(response.name);
+	// 		getFileUrls();
+	// 	})
+	// 	.fail(function(jqXHR, textStatus) {
+	// 		alert('Request failed: ' + textStatus);
+	// 		$('#msg-error').show();
+	// 		$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
+	// 	})
+	// 	.always(() => {});
 }
 
 function getFileUrls() {
@@ -243,7 +259,7 @@ function loadSettings() {
 			};
 			handleClientLoad();
 
-			if(auto_screenshot) {
+			if (auto_screenshot) {
 				takeScreenshot();
 			}
 		}
@@ -262,9 +278,6 @@ function showOptionError() {
 	$(CONSTANTS.AUTHORIZE_BTN).disable();
 }
 
-function getAuthToken(options) {
-	chrome.identity.getAuthToken({ interactive: options.interactive }, options.callback);
-}
 /**
  *  On load, called to load the auth2 library and API client library.
  */
@@ -434,3 +447,5 @@ $.fn.extend({
 		$(this).css({ paddingRight: 12 });
 	}
 });
+
+export { getAuthToken, getIdFromUrl, GetSubFolderListPromise };
