@@ -30,5 +30,10 @@
 		}
 	};
 
-	init();
+	document.onreadystatechange = () => {
+		if(document.readyState === 'complete'){
+			init();
+		}
+	}
+
 })(document);

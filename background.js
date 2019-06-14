@@ -44,7 +44,7 @@ function subscribeOnSubmitClick() {
 		switch (request.action) {
 			case 'init':
 				const { week_name } = request;
-				if (week_name != data.week_name && data.selectedFolder) {
+				if (week_name != data.week_name) {
 					console.log(request.week_name);
 					const { folder_url } = settings;
 					const folderId = getIdFromUrl(folder_url);
