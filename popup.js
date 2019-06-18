@@ -3,7 +3,8 @@ import {
 	getIdFromUrl,
 	getAuthToken,
 	CaptureScreenshot,
-	UploadScreenshot
+	UploadScreenshot,
+	GetFileUrls
 } from './js/api.js';
 
 let settings = {};
@@ -143,95 +144,34 @@ function uploadScreenshot() {
 			$('#msg-error').show();
 			$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
 		});
-
-	// const base64Data = href.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
-
-	// const metadata = {
-	// 	name: filename,
-	// 	mimeType: 'image/png',
-	// 	parents: [selectedFolder.id]
-	// };
-
-	// const boundary = '-------314159265358979323846';
-	// const delimiter = '\r\n--' + boundary + '\r\n';
-	// const close_delimiter = '\r\n--' + boundary + '--';
-	// const contentType = metadata.mimeType || 'application/octet-stream';
-	// const multipartRequestBody =
-	// 	delimiter +
-	// 	'Content-Type: application/json\r\n\r\n' +
-	// 	JSON.stringify(metadata) +
-	// 	delimiter +
-	// 	'Content-Type: ' +
-	// 	contentType +
-	// 	'\r\n' +
-	// 	'Content-Transfer-Encoding: base64\r\n' +
-	// 	'\r\n' +
-	// 	base64Data +
-	// 	close_delimiter;
-
-	// $.ajax({
-	// 	url: CONSTANTS.APIS.MULTIPART_UPLOAD,
-	// 	method: 'POST',
-	// 	crossDomain: true,
-	// 	headers: {
-	// 		Authorization: 'Bearer ' + data.token,
-	// 		'Content-Type': `multipart/related; boundary=${boundary}`
-	// 	},
-	// 	data: multipartRequestBody
-	// })
-	// 	.done(response => {
-	// 		console.log(response);
-
-	// 		data = {
-	// 			...data,
-	// 			uploadedFile: response
-	// 		};
-
-	// 		$('#msg-success').show();
-	// 		$('#view_link').html(response.name);
-	// 		getFileUrls();
-	// 	})
-	// 	.fail(function(jqXHR, textStatus) {
-	// 		alert('Request failed: ' + textStatus);
-	// 		$('#msg-error').show();
-	// 		$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
-	// 	})
-	// 	.always(() => {});
 }
 
 function getFileUrls() {
-	const { uploadedFile } = data;
-	$.ajax({
-		url: `${CONSTANTS.APIS.GET_FILES}/${uploadedFile.id}?fields=webViewLink`,
-		method: 'GET',
-		crossDomain: true,
-		headers: {
-			Authorization: 'Bearer ' + data.token
-		}
-	})
-		.done(response => {
-			data = {
-				...data,
-				uploadedFile: {
-					...uploadedFile,
-					viewLink: response.webViewLink
-				}
-			};
+	const { uploadedFile, token } = data;
+	GetFileUrls(uploadedFile.id, token)
+	.then(response =>{
+		data = {
+			...data,
+			uploadedFile: {
+				...uploadedFile,
+				viewLink: response.webViewLink
+			}
+		};
 
-			$('#view_link').attr('href', response.webViewLink);
-			$('#view_link').click(() => {
-				chrome.tabs.create({
-					url: response.webViewLink
-				});
+		$('#view_link').attr('href', response.webViewLink);
+		$('#view_link').click(() => {
+			chrome.tabs.create({
+				url: response.webViewLink
 			});
-		})
-		.fail(function(jqXHR, textStatus) {
-			alert('Request failed: ' + textStatus);
-			$('#msg-error').show();
-		})
-		.always(() => {
-			$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
 		});
+	})
+	.catch((jqXHR, textStatus) => {
+		alert('Request failed: ' + textStatus);
+		$('#msg-error').show();
+	})
+	.then(() =>{
+		$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
+	});
 }
 
 /**

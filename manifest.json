@@ -11,10 +11,10 @@
 	"permissions": [
 		"storage",
 		"identity",
+		"<all_urls>",
 		"notifications",
 		"webNavigation",
 		"*://*.google.com/",
-		"activeTab",
 		"tabs",
 		"http://*/*",
 		"https://*/*",

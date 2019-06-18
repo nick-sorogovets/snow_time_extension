@@ -36,9 +36,15 @@ function GetSubFolderListPromise(folder_url, token, folderId = null) {
 	});
 }
 
-function CaptureScreenshot() {
+function GetCurrentWindow() {
 	return new Promise((resolve, reject) => {
-		chrome.tabs.captureVisibleTab(null, { format: 'png' }, dataUrl => {
+		chrome.windows.getCurrent({}, resolve);
+	});
+}
+
+function CaptureScreenshot(windowId = null) {
+	return new Promise((resolve, reject) => {
+		chrome.tabs.captureVisibleTab(windowId, { format: 'png' }, dataUrl => {
 			resolve(dataUrl);
 		});
 	});
@@ -89,12 +95,28 @@ function UploadScreenshot(options){
 		});
 }
 
+function GetFileUrls(fileId, token) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url: `${CONSTANTS.APIS.GET_FILES}/${fileId}?fields=webViewLink`,
+			method: 'GET',
+			crossDomain: true,
+			headers: {
+				Authorization: 'Bearer ' + token
+			}
+		})
+			.done(resolve)
+			.fail(reject);
+	});
+}
 
 
 export {
 	getIdFromUrl,
 	getAuthToken,
 	GetSubFolderListPromise,
+	GetCurrentWindow,
 	CaptureScreenshot,
-	UploadScreenshot
+	UploadScreenshot,
+	GetFileUrls
 }

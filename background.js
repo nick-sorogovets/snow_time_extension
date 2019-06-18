@@ -3,7 +3,8 @@ import {
 	getIdFromUrl,
 	GetSubFolderListPromise,
 	CaptureScreenshot,
-	UploadScreenshot
+	UploadScreenshot,
+	GetCurrentWindow
 } from './js/api.js';
 
 let settings = {};
@@ -20,7 +21,6 @@ function getAuthTokenSilentCallback(token) {
 	// Catch chrome error if user is not authorized.
 	if (chrome.runtime.lastError) {
 		console.error(chrome.runtime.lastError.message);
-		showAuthNotification();
 	} else {
 		data = {
 			...data,
@@ -30,13 +30,13 @@ function getAuthTokenSilentCallback(token) {
 	}
 }
 
-function subscribeOnSubmitClick() {
+function subscribeOnSubmitClick(tabId) {
 	getAuthToken({
 		interactive: false,
 		callback: getAuthTokenSilentCallback
 	});
 
-	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
 
 		console.log(request);
@@ -76,14 +76,20 @@ function subscribeOnSubmitClick() {
 				const now = today.toISOString().substring(0, 10);
 				const filename = `${settings.username}_${now}.png`;
 				const { selectedFolder } = data;
-				const options = {
-					folderId: selectedFolder.id,
-					token: data.token,
-					dataUrl: request.dataUrl,
-					filename
-				};
 
-				UploadScreenshot(options)
+				GetCurrentWindow()
+					.then(currentWindow => {
+						return CaptureScreenshot(currentWindow.id);
+					})
+					.then(dataUrl => {
+						const options = {
+							folderId: selectedFolder.id,
+							token: data.token,
+							dataUrl,
+							filename
+						};
+						return UploadScreenshot(options);
+					})
 					.then(response => {
 						console.log(response);
 
@@ -97,17 +103,20 @@ function subscribeOnSubmitClick() {
 					.catch((jqHXR, textStatus) => {
 						alert('Request failed: ' + textStatus);
 					});
+
 				break;
 			default:
 				break;
 		}
+		return true;
 	});
-	chrome.tabs.executeScript(null, {
+
+	chrome.tabs.executeScript(tabId, {
 		file: 'content.js'
 	});
 }
 
-function loadSettings() {
+function loadSettings(tabId) {
 	chrome.storage.sync.get(
 		{
 			folder_url: DEFAULT_SETTINGS.folder_url,
@@ -115,20 +124,20 @@ function loadSettings() {
 			auto_screenshot: DEFAULT_SETTINGS.auto_screenshot,
 			auto_upload: DEFAULT_SETTINGS.auto_upload
 		},
-		function(items) {
+		function (items) {
 			const { auto_upload } = items;
 			settings = items;
 
 			if (auto_upload) {
-				subscribeOnSubmitClick();
+				subscribeOnSubmitClick(tabId);
 			}
 		}
 	);
 }
 
-chrome.webNavigation.onDOMContentLoaded.addListener(
-	function() {
-		loadSettings();
+chrome.webNavigation.onCompleted.addListener(
+	function (details) {
+		loadSettings(details.tabId);
 	},
 	{ url: [{ urlMatches: 'https://coxauto.service-now.com/time' }] }
 );
