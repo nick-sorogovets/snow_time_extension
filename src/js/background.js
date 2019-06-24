@@ -5,10 +5,12 @@ import {
 	CaptureScreenshot,
 	UploadScreenshot,
 	GetCurrentWindow
-} from './js/api.js';
+} from './api.js';
 
 let settings = {};
-let data = {};
+let data = {
+	isUploadStarted: false
+};
 
 const DEFAULT_SETTINGS = {
 	folder_url: '',
@@ -44,7 +46,12 @@ function subscribeOnSubmitClick(tabId) {
 		switch (request.action) {
 			case 'init':
 				const { week_name } = request;
-				if (week_name != data.week_name) {
+				if (week_name != data.week_name || !data.selectedFolder) {
+
+					//Clear cached data
+					data.selectedFolder = null;
+					data.week_name = null;
+
 					console.log(request.week_name);
 					const { folder_url } = settings;
 					const folderId = getIdFromUrl(folder_url);
@@ -62,48 +69,60 @@ function subscribeOnSubmitClick(tabId) {
 								};
 
 								console.log(weekFolder);
+								sendResponse(weekFolder);
 							} else {
-								alert(`Could not find folder as week name: ${week_name} `);
+								alert(`Could not find folder as week name: "${week_name}" `);
 							}
 						})
 						.catch((jqHXR, textStatus) => {
 							alert('Request failed: ' + textStatus);
 						});
-				}
+				} else if(week_name === data.week_name)
 				break;
 			case 'submit_pressed':
 				const today = new Date();
 				const now = today.toISOString().substring(0, 10);
 				const filename = `${settings.username}_${now}.png`;
-				const { selectedFolder } = data;
+				const { selectedFolder, isUploadStarted } = data;
 
-				GetCurrentWindow()
-					.then(currentWindow => {
-						return CaptureScreenshot(currentWindow.id);
-					})
-					.then(dataUrl => {
-						const options = {
-							folderId: selectedFolder.id,
-							token: data.token,
-							dataUrl,
-							filename
-						};
-						return UploadScreenshot(options);
-					})
-					.then(response => {
-						console.log(response);
+				if (!isUploadStarted) {
+				 data.isUploadStarted = true;
 
-						data = {
-							...data,
-							uploadedFile: response
-						};
+					GetCurrentWindow()
+						.then(currentWindow => {
+							return CaptureScreenshot(currentWindow.id);
+						})
+						.then(dataUrl => {
+							const options = {
+								folderId: selectedFolder.id,
+								token: data.token,
+								dataUrl,
+								filename
+							};
+							return UploadScreenshot(options);
+						})
+						.then(response => {
+							console.log(response);
 
-						sendResponse(response);
-					})
-					.catch((jqHXR, textStatus) => {
-						alert('Request failed: ' + textStatus);
-					});
+							data = {
+								...data,
+								uploadedFile: response
+							};
 
+							sendResponse(response);
+						})
+						.catch((jqHXR, textStatus) => {
+							alert('Request failed: ' + textStatus);
+						})
+						.then(() => {
+							data = {
+								...data,
+								isUploadStarted: false,
+								selectedFolder: null,
+								week_name: ''
+							};
+						});
+				}
 				break;
 			default:
 				break;

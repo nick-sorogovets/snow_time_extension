@@ -5,7 +5,7 @@ import {
 	CaptureScreenshot,
 	UploadScreenshot,
 	GetFileUrls
-} from './js/api.js';
+} from './api.js';
 
 let settings = {};
 let data = {};

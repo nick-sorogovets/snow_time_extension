@@ -2,7 +2,7 @@
 	"manifest_version": 2,
 	"name": "SNOW screenshot extension",
 	"description": "This extension allows the user take screenshot of the page and store it in the appropriate google drive location",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"icons": {
 		"16": "icon.png",
 		"48": "icon.png",
@@ -27,7 +27,7 @@
 	"content_scripts": [
     {
       "matches": ["https://coxauto.service-now.com/time*/**"],
-      "js": ["content.js"],
+      "js": ["./js/content.js"],
       "run_at": "document_idle"
     }
 	],
@@ -39,7 +39,7 @@
 	"web_accessible_resources": ["options.html"],
 	"options_page": "options.html",
 	"oauth2": {
-		"client_id": "384905528545-jcek023539jsr0c42dtbsldeaav37knb.apps.googleusercontent.com",
+		"client_id": "384905528545-54ui572ophhkd9e5cqvmj6m8cet9val3.apps.googleusercontent.com",
 		"scopes": ["https://www.googleapis.com/auth/drive"]
 	}
 }

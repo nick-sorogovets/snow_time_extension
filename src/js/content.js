@@ -21,13 +21,19 @@
 					});
 				}, 0);
 			});
-		}
-		if (weekName) {
+
 			const initMessage = {
 				action: 'init',
 				week_name: weekName.innerText
 			};
-			chrome.runtime.sendMessage(initMessage);
+			
+			chrome.runtime.sendMessage(initMessage, response => {
+				if(weekName.innerText === response.name){
+					snow_submit_button.innerText = "Submit & Upload";
+				} else {
+					snow_submit_button.innerText = "Submit";
+				}
+			});
 		} else {
 			setTimeout(init, 1000);
 		}
