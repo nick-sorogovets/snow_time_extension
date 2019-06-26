@@ -1,0 +1,22 @@
+body {
+	font-size: 15px;
+	margin: 10px;
+}
+.inputArea {
+	display: table-row;
+}
+.inputArea label {
+	text-align: left;
+	display: table-cell;
+	min-width: 135px;
+}
+.inputArea input {
+	text-align: left;
+	margin-left: 10px;
+	min-width: 500px;
+	display: table-cell;
+}
+
+h4 {
+	margin: 0;
+}

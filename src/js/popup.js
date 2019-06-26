@@ -5,7 +5,7 @@ import {
 	CaptureScreenshot,
 	UploadScreenshot,
 	GetFileUrls
-} from './js/api.js';
+} from './api.js';
 
 let settings = {};
 let data = {};
@@ -190,6 +190,7 @@ function loadSettings() {
 
 			if (!folder_url || !username) {
 				showOptionError();
+				return;
 			}
 
 			settings = items;
