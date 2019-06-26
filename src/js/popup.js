@@ -190,6 +190,7 @@ function loadSettings() {
 
 			if (!folder_url || !username) {
 				showOptionError();
+				return;
 			}
 
 			settings = items;

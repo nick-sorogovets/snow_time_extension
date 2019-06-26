@@ -9,7 +9,8 @@ import {
 
 let settings = {};
 let data = {
-	isUploadStarted: false
+	isUploadStarted: false,
+	isInitStarted: false
 };
 
 const DEFAULT_SETTINGS = {
@@ -38,46 +39,54 @@ function subscribeOnSubmitClick(tabId) {
 		callback: getAuthTokenSilentCallback
 	});
 
-	chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
 
 		console.log(request);
 
 		switch (request.action) {
 			case 'init':
-				const { week_name } = request;
-				if (week_name != data.week_name || !data.selectedFolder) {
+				if (!data.isInitStarted) {
+					data.isInitStarted = true;
+					const { week_name } = request;
+					if (week_name != data.week_name || !data.selectedFolder) {
+						//Clear cached data
+						data.selectedFolder = null;
+						data.week_name = null;
 
-					//Clear cached data
-					data.selectedFolder = null;
-					data.week_name = null;
+						console.log(request.week_name);
+						const { folder_url } = settings;
+						const folderId = getIdFromUrl(folder_url);
+						GetSubFolderListPromise(folder_url, data.token, folderId)
+							.then(folders => {
+								if (folders.some(f => f.name === week_name)) {
+									const weekFolder = folders.find((folder, index) => {
+										return folder.name == week_name;
+									});
 
-					console.log(request.week_name);
-					const { folder_url } = settings;
-					const folderId = getIdFromUrl(folder_url);
-					GetSubFolderListPromise(folder_url, data.token, folderId)
-						.then(folders => {
-							if (folders.some(f => f.name === week_name)) {
-								const weekFolder = folders.find((folder, index) => {
-									return folder.name == week_name;
-								});
+									data = {
+										...data,
+										week_name,
+										selectedFolder: weekFolder
+									};
 
-								data = {
-									...data,
-									week_name,
-									selectedFolder: weekFolder
-								};
-
-								console.log(weekFolder);
-								sendResponse(weekFolder);
-							} else {
-								alert(`Could not find folder as week name: "${week_name}" `);
-							}
-						})
-						.catch((jqHXR, textStatus) => {
-							alert('Request failed: ' + textStatus);
-						});
-				} else if(week_name === data.week_name)
+									console.log(weekFolder);
+									sendResponse(weekFolder);
+								} else {
+									data.isInitStarted = false;
+									sendResponse({ name: undefined});
+									alert(`Could not find folder as week name: "${week_name}" `);
+								}
+							})
+							.catch((jqHXR, textStatus) => {
+								alert('Request failed: ' + textStatus);
+								data.isInitStarted = false;
+							});
+					} else if (week_name === data.week_name && data.selectedFolder) {
+						sendResponse(data.selectedFolder);
+						data.isInitStarted = false;
+					}
+				}
 				break;
 			case 'submit_pressed':
 				const today = new Date();
@@ -86,7 +95,7 @@ function subscribeOnSubmitClick(tabId) {
 				const { selectedFolder, isUploadStarted } = data;
 
 				if (!isUploadStarted) {
-				 data.isUploadStarted = true;
+					data.isUploadStarted = true;
 
 					GetCurrentWindow()
 						.then(currentWindow => {
@@ -131,7 +140,7 @@ function subscribeOnSubmitClick(tabId) {
 	});
 
 	chrome.tabs.executeScript(tabId, {
-		file: 'content.js'
+		file: './js/content.js'
 	});
 }
 
@@ -143,7 +152,7 @@ function loadSettings(tabId) {
 			auto_screenshot: DEFAULT_SETTINGS.auto_screenshot,
 			auto_upload: DEFAULT_SETTINGS.auto_upload
 		},
-		function (items) {
+		function(items) {
 			const { auto_upload } = items;
 			settings = items;
 
@@ -155,7 +164,7 @@ function loadSettings(tabId) {
 }
 
 chrome.webNavigation.onCompleted.addListener(
-	function (details) {
+	function(details) {
 		loadSettings(details.tabId);
 	},
 	{ url: [{ urlMatches: 'https://coxauto.service-now.com/time' }] }

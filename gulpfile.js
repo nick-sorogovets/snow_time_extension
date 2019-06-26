@@ -1,15 +1,16 @@
 'use strict';
 
-//npm install --save-dev gulp jshint gulp-jshint gulp-minify-css gulp-uglify gulp-clean gulp-cleanhtml gulp-strip-debug gulp-zip
+//npm install --save-dev gulp jshint gulp-jshint gulp-minify-css gulp-uglify gulp-clean gulp-cleanhtml gulp-strip-debug gulp-zip gulp-json-modify
 
-var gulp = require('gulp'),
-	clean = require('gulp-clean'),
-	cleanhtml = require('gulp-cleanhtml'),
-	minifycss = require('gulp-minify-css'),
-	jshint = require('gulp-jshint'),
-	stripdebug = require('gulp-strip-debug'),
-	uglify = require('gulp-uglify'),
-	zip = require('gulp-zip');
+const gulp = require('gulp');
+const	clean = require('gulp-clean');
+const	cleanhtml = require('gulp-cleanhtml');
+const	minifycss = require('gulp-minify-css');
+const jshint = require('gulp-jshint');
+const	stripdebug = require('gulp-strip-debug');
+const uglify = require('gulp-uglify');
+const	zip = require('gulp-zip');
+const jsonModify = require('gulp-json-modify');
 
 //clean build directory
 gulp.task('clean', function() {
@@ -24,6 +25,7 @@ gulp.task('copy', function() {
 	gulp.src('node_modules/jquery/dist/jquery.min.js')
 		.pipe(gulp.dest('build'));
 	return gulp.src('src/manifest.json')
+		.pipe(jsonModify({ key: 'oauth2.client_id', value: '384905528545-jcek023539jsr0c42dtbsldeaav37knb.apps.googleusercontent.com'}))
 		.pipe(gulp.dest('build'));
 });
 
@@ -36,16 +38,16 @@ gulp.task('html', function() {
 
 //run scripts through JSHint
 gulp.task('jshint', function() {
-	return gulp.src('src/js/*.js')
-		.pipe(jshint())
-		.pipe(jshint.reporter('default'));
+	// return gulp.src('src/js/*.js')
+	// 	.pipe(jshint())
+	// 	.pipe(jshint.reporter('default'));
 });
 
 //copy vendor scripts and uglify all other scripts, creating source maps
 gulp.task('scripts', ['jshint'], function() {
 	return gulp.src(['src/js/**/*.js'])
-		.pipe(stripdebug())
-		.pipe(uglify({outSourceMap: true}))
+	//	.pipe(stripdebug())
+		// .pipe(uglify({outSourceMap: true}))
 		.pipe(gulp.dest('build/js'));
 });
 
