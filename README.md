@@ -3,7 +3,7 @@
 Snow screenshot uploader
 ===============
 
-<img src="icon.png" width="250">
+<img src="/img/icon.png" width="250">
 
 # Goal
 
