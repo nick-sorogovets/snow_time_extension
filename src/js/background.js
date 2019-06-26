@@ -73,13 +73,14 @@ function subscribeOnSubmitClick(tabId) {
 									console.log(weekFolder);
 									sendResponse(weekFolder);
 								} else {
-									data.isInitStarted = false;
 									sendResponse({ name: undefined});
 									alert(`Could not find folder as week name: "${week_name}" `);
 								}
 							})
 							.catch((jqHXR, textStatus) => {
-								alert('Request failed: ' + textStatus);
+								alert('Request failed: ' + textStatus);								
+							})
+							.then(() => {
 								data.isInitStarted = false;
 							});
 					} else if (week_name === data.week_name && data.selectedFolder) {
