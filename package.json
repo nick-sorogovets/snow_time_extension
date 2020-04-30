@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/nick-sorogovets/snow_time_extension#readme",
   "dependencies": {
-    "jquery": "^3.4.1"
+    "jquery": "^3.5.0"
   },
   "devDependencies": {
     "gulp": "^3.9.1",
