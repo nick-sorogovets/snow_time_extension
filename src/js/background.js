@@ -4,20 +4,21 @@ import {
 	GetSubFolderListPromise,
 	CaptureScreenshot,
 	UploadScreenshot,
-	GetCurrentWindow
+	GetCurrentWindow,
+	CreateFolder,
 } from './api.js';
 
 let settings = {};
 let data = {
 	isUploadStarted: false,
-	isInitStarted: false
+	isInitStarted: false,
 };
 
 const DEFAULT_SETTINGS = {
 	folder_url: '',
 	username: '',
 	auto_screenshot: false,
-	auto_upload: false
+	auto_upload: false,
 };
 
 function getAuthTokenSilentCallback(token) {
@@ -27,7 +28,7 @@ function getAuthTokenSilentCallback(token) {
 	} else {
 		data = {
 			...data,
-			token
+			token,
 		};
 		console.log('Authentication success ', token);
 	}
@@ -36,10 +37,10 @@ function getAuthTokenSilentCallback(token) {
 function subscribeOnSubmitClick(tabId) {
 	getAuthToken({
 		interactive: false,
-		callback: getAuthTokenSilentCallback
+		callback: getAuthTokenSilentCallback,
 	});
 
-	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
 
 		console.log(request);
@@ -58,8 +59,8 @@ function subscribeOnSubmitClick(tabId) {
 						const { folder_url } = settings;
 						const folderId = getIdFromUrl(folder_url);
 						GetSubFolderListPromise(folder_url, data.token, folderId)
-							.then(folders => {
-								if (folders.some(f => f.name === week_name)) {
+							.then((folders) => {
+								if (folders.some((f) => f.name === week_name)) {
 									const weekFolder = folders.find((folder, index) => {
 										return folder.name == week_name;
 									});
@@ -67,18 +68,31 @@ function subscribeOnSubmitClick(tabId) {
 									data = {
 										...data,
 										week_name,
-										selectedFolder: weekFolder
+										selectedFolder: weekFolder,
 									};
 
 									console.log(weekFolder);
 									sendResponse(weekFolder);
 								} else {
-									sendResponse({ name: undefined});
-									alert(`Could not find folder as week name: "${week_name}" `);
+									CreateFolder(week_name, data.token, folderId)
+										.then((createdFolder) => {
+											data = {
+												...data,
+												week_name,
+												selectedFolder: createdFolder,
+											};
+											console.log(`Folder created automatically: "${week_name}" `);
+											sendResponse(createdFolder);
+										})
+										.catch((jqHXR, textStatus) => {
+											console.error(JSON.stringify(error));
+											sendResponse({ name: undefined });
+											alert(`Failed to create folder as week name: "${week_name}" `);
+										});
 								}
 							})
 							.catch((jqHXR, textStatus) => {
-								alert('Request failed: ' + textStatus);								
+								alert('Request failed: ' + textStatus);
 							})
 							.then(() => {
 								data.isInitStarted = false;
@@ -99,24 +113,24 @@ function subscribeOnSubmitClick(tabId) {
 					data.isUploadStarted = true;
 
 					GetCurrentWindow()
-						.then(currentWindow => {
+						.then((currentWindow) => {
 							return CaptureScreenshot(currentWindow.id);
 						})
-						.then(dataUrl => {
+						.then((dataUrl) => {
 							const options = {
 								folderId: selectedFolder.id,
 								token: data.token,
 								dataUrl,
-								filename
+								filename,
 							};
 							return UploadScreenshot(options);
 						})
-						.then(response => {
+						.then((response) => {
 							console.log(response);
 
 							data = {
 								...data,
-								uploadedFile: response
+								uploadedFile: response,
 							};
 
 							sendResponse(response);
@@ -129,7 +143,7 @@ function subscribeOnSubmitClick(tabId) {
 								...data,
 								isUploadStarted: false,
 								selectedFolder: null,
-								week_name: ''
+								week_name: '',
 							};
 						});
 				}
@@ -141,7 +155,7 @@ function subscribeOnSubmitClick(tabId) {
 	});
 
 	chrome.tabs.executeScript(tabId, {
-		file: './js/content.js'
+		file: './js/content.js',
 	});
 }
 
@@ -151,9 +165,9 @@ function loadSettings(tabId) {
 			folder_url: DEFAULT_SETTINGS.folder_url,
 			username: DEFAULT_SETTINGS.username,
 			auto_screenshot: DEFAULT_SETTINGS.auto_screenshot,
-			auto_upload: DEFAULT_SETTINGS.auto_upload
+			auto_upload: DEFAULT_SETTINGS.auto_upload,
 		},
-		function(items) {
+		function (items) {
 			const { auto_upload } = items;
 			settings = items;
 
@@ -165,7 +179,7 @@ function loadSettings(tabId) {
 }
 
 chrome.webNavigation.onCompleted.addListener(
-	function(details) {
+	function (details) {
 		loadSettings(details.tabId);
 	},
 	{ url: [{ urlMatches: 'https://coxauto.service-now.com/time' }] }

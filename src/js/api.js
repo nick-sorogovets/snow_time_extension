@@ -1,9 +1,9 @@
 const CONSTANTS = {
 	APIS: {
-		GET_FILES: 'https://www.googleapis.com/drive/v3/files',
-		MULTIPART_UPLOAD: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
-	}
-}
+		FILES: 'https://www.googleapis.com/drive/v3/files',
+		MULTIPART_UPLOAD: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+	},
+};
 
 function getIdFromUrl(url) {
 	return url.match(/[-\w]{25,}/)[0];
@@ -14,24 +14,23 @@ function getAuthToken(options) {
 }
 
 function GetSubFolderListPromise(folder_url, token, folderId = null) {
-
 	folderId = folderId || getIdFromUrl(folder_url);
 
 	return new Promise((resolve, reject) => {
 		$.ajax({
-			url: CONSTANTS.APIS.GET_FILES,
+			url: CONSTANTS.APIS.FILES,
 			method: 'GET',
 			crossDomain: true,
 			headers: {
-				Authorization: 'Bearer ' + token
+				Authorization: 'Bearer ' + token,
 			},
 			data: {
 				corpora: 'user',
 				q: `mimeType = 'application/vnd.google-apps.folder' and '${folderId}' in parents`,
-				supportsTeamDrives: true
-			}
+				supportsTeamDrives: true,
+			},
 		})
-			.done(response => resolve(response.files))
+			.done((response) => resolve(response.files))
 			.fail(reject);
 	});
 }
@@ -44,22 +43,21 @@ function GetCurrentWindow() {
 
 function CaptureScreenshot(windowId = null) {
 	return new Promise((resolve, reject) => {
-		chrome.tabs.captureVisibleTab(windowId, { format: 'png' }, dataUrl => {
+		chrome.tabs.captureVisibleTab(windowId, { format: 'png' }, (dataUrl) => {
 			resolve(dataUrl);
 		});
 	});
 }
 
-function UploadScreenshot(options){
-
-	const { folderId, token, dataUrl, filename} = options;
+function UploadScreenshot(options) {
+	const { folderId, token, dataUrl, filename } = options;
 
 	const base64Data = dataUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
 
 	const metadata = {
 		name: filename,
 		mimeType: 'image/png',
-		parents: [folderId]
+		parents: [folderId],
 	};
 
 	const boundary = '-------314159265358979323846';
@@ -79,44 +77,69 @@ function UploadScreenshot(options){
 		base64Data +
 		close_delimiter;
 
-		return new Promise ((resolve, reject) => {
-			$.ajax({
-				url: CONSTANTS.APIS.MULTIPART_UPLOAD,
-				method: 'POST',
-				crossDomain: true,
-				headers: {
-					Authorization: 'Bearer ' + token,
-					'Content-Type': `multipart/related; boundary=${boundary}`
-				},
-				data: multipartRequestBody
-			})
-				.done(resolve)
-				.fail(reject);
-		});
-}
-
-function GetFileUrls(fileId, token) {
 	return new Promise((resolve, reject) => {
 		$.ajax({
-			url: `${CONSTANTS.APIS.GET_FILES}/${fileId}?fields=webViewLink`,
-			method: 'GET',
+			url: CONSTANTS.APIS.MULTIPART_UPLOAD,
+			method: 'POST',
 			crossDomain: true,
 			headers: {
-				Authorization: 'Bearer ' + token
-			}
+				Authorization: 'Bearer ' + token,
+				'Content-Type': `multipart/related; boundary=${boundary}`,
+			},
+			data: multipartRequestBody,
 		})
 			.done(resolve)
 			.fail(reject);
 	});
 }
 
+function CreateFolder(folderName, token, folderId) {
+	var data = {
+		name: folderName,
+		title: folderName,
+		mimeType: 'application/vnd.google-apps.folder',
+		parents: [folderId],
+	};
+
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url: CONSTANTS.APIS.FILES,
+			method: 'POST',
+			headers: {
+				Authorization: 'Bearer ' + token,
+				'Content-Type': 'application/json',
+			},
+			data: JSON.stringify(data),
+		})
+			.done((response) => {
+				resolve(response);
+			})
+			.fail(reject);
+	});
+}
+
+function GetFileUrls(fileId, token) {
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			url: `${CONSTANTS.APIS.FILES}/${fileId}?fields=webViewLink`,
+			method: 'GET',
+			crossDomain: true,
+			headers: {
+				Authorization: 'Bearer ' + token,
+			},
+		})
+			.done(resolve)
+			.fail(reject);
+	});
+}
 
 export {
 	getIdFromUrl,
 	getAuthToken,
 	GetSubFolderListPromise,
+	CreateFolder,
 	GetCurrentWindow,
 	CaptureScreenshot,
 	UploadScreenshot,
-	GetFileUrls
-}
+	GetFileUrls,
+};

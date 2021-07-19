@@ -1,11 +1,12 @@
 {
   "name": "snow-screenshot-extension",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Take screenshot from SNOW page to simplify developers life",
   "main": "popup.js",
   "scripts": {
     "build": "node ./gulpfile.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "preinstall": "npx npm-force-resolutions"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,10 @@
   },
   "homepage": "https://github.com/nick-sorogovets/snow_time_extension#readme",
   "dependencies": {
-    "jquery": "^3.4.1"
+    "jquery": "^3.6.0"
+  },
+  "resolutions": {
+    "graceful-fs": "^4.2.4"
   },
   "devDependencies": {
     "gulp": "^3.9.1",
@@ -35,6 +39,6 @@
     "gulp-strip-debug": "^3.0.0",
     "gulp-uglify": "^3.0.2",
     "gulp-zip": "^3.2.0",
-    "jshint": "^2.10.2"
+    "jshint": "^2.13.0"
   }
 }
