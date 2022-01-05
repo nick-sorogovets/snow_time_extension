@@ -1,7 +1,52 @@
+* {
+	padding: 0;
+	margin: 0;
+}
+
+:root {
+	--shadow-color: #6e6e6e;
+	--header-color: #c2c2c2;
+	--main-color: #0074c7;
+	--error-color: #ff0000;
+	--btn-text-color: #ffffff;
+	--border-color: #808080;
+}
+
 body {
 	font-size: 15px;
-	margin: 10px;
 }
+
+header {
+	display: flex;
+	color: var(--main-color);
+	background-color: var(--header-color);
+	box-shadow: var(--shadow-color) 0 2px 3px;
+}
+
+.logo {
+	margin: auto 5px;
+	width: 25px;
+	height: 25px;
+	background-image: url(../img/icon_48.png);
+	background-repeat: no-repeat;
+	background-size: contain;
+}
+
+h1 {
+	padding: 3px 4px;
+	font-size: 24px;
+}
+
+main {
+	margin: 0.8em;
+}
+
+fieldset {
+	border-radius: 1.1em;
+	border: 1px solid var(--border-color);
+	padding: 10px;
+}
+
 .inputArea {
 	display: table-row;
 }
@@ -10,13 +55,161 @@ body {
 	display: table-cell;
 	min-width: 135px;
 }
+
+.inputArea label ~ input[required]::before {
+	display: block;
+	content: '*';
+	color: var(--error-color);
+	width: 40px;
+	height: 40px;
+}
 .inputArea input {
+	margin-bottom: 0.5em;
+	padding: 0.5em;
+	border-radius: 5px;
+	border: 1px solid var(--border-color);
 	text-align: left;
 	margin-left: 10px;
 	min-width: 500px;
 	display: table-cell;
 }
+.inputArea input.error {
+	border-color: var(--error-color);
+}
+
+.inputArea input:focus {
+	border-color: var(--main-color);
+}
+
+.submit {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-content: center;
+}
+
+button {
+	display: inline-block;
+	border-radius: 10px;
+	border: none;
+	padding: 1rem 1rem;
+	margin: 0;
+	text-decoration: none;
+	background: var(--main-color);
+	color: var(--btn-text-color);
+	font-family: sans-serif;
+	font-size: 1rem;
+	line-height: 1;
+	cursor: pointer;
+	text-align: center;
+	transition: background 250ms ease-in-out, transform 150ms ease;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+}
+
+button:hover,
+button:focus {
+	background: #0c79ff;
+}
+
+button:focus {
+	outline: 1px solid #fff;
+	outline-offset: -4px;
+}
+
+button:active {
+	transform: scale(0.99);
+}
+
+.checkbox-ios {
+	margin-top: 5px;
+	margin-bottom: 5px;
+	--checkbox-scale: 0.5;
+	display: inline-block;
+	height: calc(2em * var(--checkbox-scale));
+	line-height: calc(2em * var(--checkbox-scale));
+	margin-right: calc(0.7em * var(--checkbox-scale));
+	position: relative;
+	vertical-align: middle;
+	/* 	font-size: 14px; */
+	user-select: none;
+}
+.checkbox-ios .checkbox-ios-switch {
+	position: relative;
+	display: inline-block;
+	box-sizing: border-box;
+	width: calc(3.9em * var(--checkbox-scale));
+	height: calc(1.9em * var(--checkbox-scale));
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 25%/50%;
+	vertical-align: top;
+	background: #eee;
+	transition: 0.2s;
+}
+.checkbox-ios .checkbox-ios-switch:before {
+	content: '';
+	position: absolute;
+	top: 0;
+	/* top: calc(0.07em * var(--checkbox-scale));; */
+	left: calc(0.07em * var(--checkbox-scale));
+	display: inline-block;
+	width: calc(1.7em * var(--checkbox-scale));
+	height: calc(1.7em * var(--checkbox-scale));
+	border-radius: 50%;
+	background: white;
+	box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
+	transition: 0.15s;
+}
+.checkbox-ios input[type='checkbox'] {
+	display: block;
+	width: 0;
+	height: 0;
+	position: absolute;
+	z-index: -1;
+	opacity: 0;
+}
+.checkbox-ios input[type='checkbox']:not(:disabled):active + .checkbox-ios-switch:before {
+	box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.3);
+}
+.checkbox-ios input[type='checkbox']:checked + .checkbox-ios-switch {
+	background: var(--main-color);
+}
+.checkbox-ios input[type='checkbox']:checked + .checkbox-ios-switch:before {
+	transform: translateX(calc(2em * var(--checkbox-scale)));
+}
+
+/* Hover */
+.checkbox-ios input[type='checkbox']:not(:disabled) + .checkbox-ios-switch {
+	cursor: pointer;
+	border-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Disabled */
+.checkbox-ios input[type='checkbox']:disabled + .checkbox-ios-switch {
+	filter: grayscale(70%);
+	border-color: rgba(0, 0, 0, 0.1);
+}
+.checkbox-ios input[type='checkbox']:disabled + .checkbox-ios-switch:before {
+	background: #eee;
+}
+
+/* Focus */
+.checkbox-ios.focused .checkbox-ios-switch:before {
+	box-shadow: inset 0px 0px 4px #ff5623;
+}
+
+#status {
+	padding-left: 1em;
+}
 
 h4 {
 	margin: 0;
+}
+
+footer {
+	display: flex;
+	justify-content: flex-end;
+	margin: 0 3px 3px 0;
 }

@@ -1,8 +1,8 @@
 {
-	"manifest_version": 2,
+	"manifest_version": 3,
 	"name": "SNOW screenshot extension",
 	"description": "This extension allows the user take screenshot of the page and store it in the appropriate google drive location",
-	"version": "0.0.4",
+	"version": "0.0.8",
 	"icons": {
 		"16": "./img/icon_16.png",
 		"48": "./img/icon_48.png",
@@ -11,17 +11,19 @@
 	"permissions": [
 		"storage",
 		"identity",
-		"<all_urls>",
 		"tabs",
 		"activeTab",
 		"notifications",
 		"webNavigation",
+		"scripting"
+	],
+	"host_permissions": [
+		"<all_urls>",
 		"*://*.google.com/",
 		"http://*/*",
-		"https://*/*",
-		"chrome://favicon/"
+		"https://*/*"
 	],
-	"browser_action": {
+	"action": {
 		"default_icon": "./img/icon.png",
 		"default_popup": "popup.html"
 	},
@@ -33,14 +35,16 @@
     }
 	],
   "background": {
-		"persistent": false,
-		"page": "background.html"
+		"service_worker": "./js/background.js",
+		"type": "module"
   },
-	"content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
-	"web_accessible_resources": ["options.html"],
+	"content_security_policy": {
+		"script-src": "'self' https://apis.google.com",
+		"object-src": "'self'"
+	},
 	"options_page": "options.html",
 	"oauth2": {
-		"client_id": "384905528545-jcek023539jsr0c42dtbsldeaav37knb.apps.googleusercontent.com",
+		"client_id": "384905528545-5nupa2vochv26iqtfiokpj2c3s3lvolc.apps.googleusercontent.com",
 		"scopes": ["https://www.googleapis.com/auth/drive"]
 	}
 }

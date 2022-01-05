@@ -4,7 +4,7 @@ import {
 	getAuthToken,
 	CaptureScreenshot,
 	UploadScreenshot,
-	GetFileUrls
+	GetFileUrls,
 } from './api.js';
 
 let settings = {};
@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS = {
 	folder_url: '',
 	username: '',
 	auto_screenshot: false,
-	auto_upload: false
+	auto_upload: false,
 };
 
 const CONSTANTS = {
@@ -29,18 +29,18 @@ const CONSTANTS = {
 		FOLDER_LIST: '#folders_list',
 		UPLOAD_BUTTON: '#upload_screenshot_button',
 		OPTIONS_URL: '#options_url',
-		OPTIONS_ERROR: '#options_error'
+		OPTIONS_ERROR: '#options_error',
 	},
 	APIS: {
 		GET_FILES: 'https://www.googleapis.com/drive/v3/files',
-		MULTIPART_UPLOAD: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
-	}
+		MULTIPART_UPLOAD: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+	},
 };
 
 function takeScreenshot() {
 	$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).setBusy(true);
 
-	CaptureScreenshot().then(dataUrl => {
+	CaptureScreenshot().then((dataUrl) => {
 		$(CONSTANTS.IDS.SCREENSHOT_PREVIEW).attr('src', dataUrl);
 		$(CONSTANTS.IDS.SCREENSHOT_CONTAINER).show();
 
@@ -55,7 +55,7 @@ function takeScreenshot() {
 		data = {
 			...data,
 			href: dataUrl,
-			filename: filename
+			filename: filename,
 		};
 
 		$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).setBusy(false);
@@ -71,20 +71,21 @@ function getListOfSubFolders(folderId = null) {
 		$(CONSTANTS.IDS.CURRENT_FOLDER).html('<strong>Root</strong>');
 		data = {
 			...data,
-			selectedFolder: { id: getIdFromUrl(folder_url) }
+			selectedFolder: { id: getIdFromUrl(folder_url) },
 		};
 	}
 
 	GetSubFolderListPromise(folder_url, data.token, folderId)
-		.then(folders => {
+		.then((folders) => {
 			data = {
 				...data,
-				folders
+				folders,
 			};
 			renderFolderList(folders);
 		})
-		.catch((jqXHR, textStatus, errorThrown) => {
-			alert('Request failed: ' + textStatus);
+		.catch((error) => {
+			alert(`Error get sub-folders: ${error?.responseJSON?.error?.message}`);
+			showOptionError();
 		})
 		.then(() => {
 			$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).setBusy(false);
@@ -94,12 +95,12 @@ function getListOfSubFolders(folderId = null) {
 function renderFolderList(folders) {
 	$(CONSTANTS.IDS.FOLDER_LIST).empty();
 
-	folders.map(folder => {
+	folders.map((folder) => {
 		let element = $(`<li data-id="${folder.id}" class="folder">${folder.name}</li>`);
-		element.click(folder.id, event => {
+		element.click(folder.id, (event) => {
 			data = {
 				...data,
-				selectedFolder: folder
+				selectedFolder: folder,
 			};
 			getListOfSubFolders(event.data);
 			updateSelectedFolder();
@@ -123,16 +124,16 @@ function uploadScreenshot() {
 		folderId: selectedFolder.id,
 		token: data.token,
 		dataUrl: href,
-		filename
+		filename,
 	};
 
 	UploadScreenshot(options)
-		.then(response => {
+		.then((response) => {
 			console.log(response);
 
 			data = {
 				...data,
-				uploadedFile: response
+				uploadedFile: response,
 			};
 
 			$('#msg-success').show();
@@ -149,29 +150,29 @@ function uploadScreenshot() {
 function getFileUrls() {
 	const { uploadedFile, token } = data;
 	GetFileUrls(uploadedFile.id, token)
-	.then(response =>{
-		data = {
-			...data,
-			uploadedFile: {
-				...uploadedFile,
-				viewLink: response.webViewLink
-			}
-		};
+		.then((response) => {
+			data = {
+				...data,
+				uploadedFile: {
+					...uploadedFile,
+					viewLink: response.webViewLink,
+				},
+			};
 
-		$('#view_link').attr('href', response.webViewLink);
-		$('#view_link').click(() => {
-			chrome.tabs.create({
-				url: response.webViewLink
+			$('#view_link').attr('href', response.webViewLink);
+			$('#view_link').click(() => {
+				chrome.tabs.create({
+					url: response.webViewLink,
+				});
 			});
+		})
+		.catch((jqXHR, textStatus) => {
+			alert('Request failed: ' + textStatus);
+			$('#msg-error').show();
+		})
+		.then(() => {
+			$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
 		});
-	})
-	.catch((jqXHR, textStatus) => {
-		alert('Request failed: ' + textStatus);
-		$('#msg-error').show();
-	})
-	.then(() =>{
-		$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
-	});
 }
 
 /**
@@ -183,9 +184,9 @@ function loadSettings() {
 			folder_url: DEFAULT_SETTINGS.folder_url,
 			username: DEFAULT_SETTINGS.username,
 			auto_screenshot: DEFAULT_SETTINGS.auto_screenshot,
-			auto_upload: DEFAULT_SETTINGS.auto_upload
+			auto_upload: DEFAULT_SETTINGS.auto_upload,
 		},
-		function(items) {
+		function (items) {
 			const { folder_url, username, auto_screenshot } = items;
 
 			if (!folder_url || !username) {
@@ -196,7 +197,7 @@ function loadSettings() {
 			settings = items;
 			data = {
 				...data,
-				selectedFolder: { id: getIdFromUrl(items.folder_url) }
+				selectedFolder: { id: getIdFromUrl(items.folder_url) },
 			};
 			handleClientLoad();
 
@@ -207,8 +208,21 @@ function loadSettings() {
 	);
 }
 
+function toggleZoom(element) {
+	if (element) {
+		var isZoomed = element?.hasAttribute('zoomed');
+		if (isZoomed) {
+			element.style.width = '';
+			element.removeAttribute('zoomed');
+		} else {
+			element.style.width = `${element.clientWidth * 2}px`;
+			element.setAttribute('zoomed', 'true');
+		}
+	}
+}
+
 function showOptionError() {
-	let optionUrl = chrome.extension.getURL('options.html');
+	let optionUrl = chrome.runtime.getURL('options.html');
 	optionUrl = `${optionUrl}?origin=popup.html`;
 	$(CONSTANTS.IDS.OPTIONS_URL).attr('href', optionUrl);
 	$(CONSTANTS.IDS.OPTIONS_ERROR).show();
@@ -225,7 +239,7 @@ function showOptionError() {
 function handleClientLoad() {
 	getAuthToken({
 		interactive: false,
-		callback: getAuthTokenSilentCallback
+		callback: getAuthTokenSilentCallback,
 	});
 }
 
@@ -238,7 +252,7 @@ function getAuthTokenSilentCallback(token) {
 	} else {
 		data = {
 			...data,
-			token
+			token,
 		};
 		console.log('Authentication success ', token);
 		$(CONSTANTS.IDS.AUTHORIZE_BTN).hide();
@@ -250,7 +264,7 @@ function showAuthNotification() {
 		id: 'start-auth',
 		iconUrl: 'icon.png',
 		title: 'SNOW screenshot upload extension',
-		message: 'Click here to authorize access to GDrive'
+		message: 'Click here to authorize access to GDrive',
 	};
 	createBasicNotification(options);
 }
@@ -261,9 +275,9 @@ function createBasicNotification(options) {
 		iconUrl: options.iconUrl, // Relative to Chrome dir or remote URL must be whitelisted in manifest.
 		title: options.title,
 		message: options.message,
-		isClickable: true
+		isClickable: true,
 	};
-	chrome.notifications.create(options.id, notificationOptions, function(notificationId) {});
+	chrome.notifications.create(options.id, notificationOptions, function (notificationId) {});
 }
 
 /**
@@ -280,7 +294,7 @@ function getAuthTokenInteractiveCallback(token) {
 	} else {
 		data = {
 			...data,
-			token
+			token,
 		};
 		$(CONSTANTS.IDS.AUTHORIZE_BTN).hide();
 		console.log('Authentication success', token);
@@ -297,7 +311,7 @@ function handleAuthClick(event) {
 function getAuthTokenInteractive() {
 	getAuthToken({
 		interactive: true,
-		callback: getAuthTokenInteractiveCallback
+		callback: getAuthTokenInteractiveCallback,
 	});
 }
 
@@ -318,7 +332,7 @@ function notificationClicked(notificationId) {
  * @param {string} notificationId - Id of notification to clear.
  */
 function clearNotification(notificationId) {
-	chrome.notifications.clear(notificationId, function(wasCleared) {});
+	chrome.notifications.clear(notificationId, function (wasCleared) {});
 }
 
 /**
@@ -347,12 +361,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		uploadScreenshot();
 	});
 
+	const screenshotPreview = document.getElementById('screenshot-preview');
+	screenshotPreview?.addEventListener('click', (event) => {
+		toggleZoom(event.target);
+	});
+
 	//Load Settings
 	loadSettings();
 });
 
 $.fn.extend({
-	setBusy: function(isBusy = false) {
+	setBusy: function (isBusy = false) {
 		if (isBusy === true) {
 			$(this).disable();
 			$(this).showSpinner();
@@ -361,32 +380,30 @@ $.fn.extend({
 			$(this).hideSpinner();
 		}
 	},
-	disable: function() {
+	disable: function () {
 		$(this).prop('disabled', true);
 	},
-	enable: function() {
+	enable: function () {
 		$(this).prop('disabled', false);
 	},
-	showSpinner: function() {
+	showSpinner: function () {
 		const position = $(this).position();
 		const elementWidth = $(this).outerWidth(true);
 		const elementHeight = $(this).outerHeight(true);
 
 		const top = position.top + elementHeight / 2 - 10;
 		const left = position.left + elementWidth;
-		$('#ajax-spinner')
-			.show()
-			.css({
-				top,
-				left
-			});
+		$('#ajax-spinner').show().css({
+			top,
+			left,
+		});
 
 		$(this).css({ paddingRight: 42 });
 	},
-	hideSpinner: function() {
+	hideSpinner: function () {
 		$('#ajax-spinner').hide();
 		$(this).css({ paddingRight: 12 });
-	}
+	},
 });
 
 export { getAuthToken, getIdFromUrl, GetSubFolderListPromise };

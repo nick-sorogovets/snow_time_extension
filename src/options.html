@@ -4,12 +4,17 @@
 		<title>SNOW Screenshot Extension Options</title>
 		<link rel="stylesheet" href="./styles/options.css" />
 		<script src="jquery.min.js"></script>
-		<script src="./js/options.js"></script>
+		<script type="module" src="./js/options.js"></script>
 	</head>
 	<body>
+		<header>
+			<div class="logo"></div>
+			<h1>Settings</h1>
+		</header>
+		<main>
 		<form id="settingsForm">
-			<fieldset>
-				<legend>Extension settings</legend>
+			<!-- <fieldset>
+				<legend>Extension settings</legend> -->
 				<div class="inputArea">
 					<label for="folder-url">Google Drive folder:</label>
 					<input
@@ -28,20 +33,32 @@
 						required
 					/>
 				</div>
-				<h4>SNOW automation settings:</h4>
+				<fieldset>
+				<legend>Automation settings</legend>
 				<div>
-					<label for="auto_screenshot">Auto-create screenshot on pop-up open:</label>
-					<input id="auto_screenshot" type="checkbox"/>
+					<label for="auto_screenshot" class="checkbox-ios">
+						<span>Auto-create screenshot on pop-up open:</span>
+						<input id="auto_screenshot" type="checkbox"/>
+						<div class="checkbox-ios-switch"></div>
+					</label>
 				</div>
 				<div>
-					<label for="auto_upload">Auto-upload and select folder on Submit:</label>
-					<input id="auto_upload" type="checkbox"/>
+					<label for="auto_upload" class="checkbox-ios">
+					 <span>	Auto-upload and select folder on Submit:</span>
+					 <input id="auto_upload" type="checkbox"/>
+					 <div class="checkbox-ios-switch"></div>
+					 </label>
 				</div>
-				<div id="status"></div>
-				<div>
-					<button type="submit">Save & Close</button>
+				</fieldset>
+				<br/>
+				<div class="submit">
+					<button type="submit">Save & Close</button> <div id="status"></div>
 				</div>
-			</fieldset>
+			<!-- </fieldset> -->
 		</form>
+		</main>
+		<footer>
+			<small>Made by <a href="mailto:sorogovets.nikolay@gmail.com"> Nick Sorogovets</a> &copy; 2022</small>
+		</footer>
 	</body>
 </html>

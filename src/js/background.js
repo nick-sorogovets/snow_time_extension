@@ -8,6 +8,8 @@ import {
 	CreateFolder,
 } from './api.js';
 
+import { init } from './content.js';
+
 let settings = {};
 let data = {
 	isUploadStarted: false,
@@ -85,14 +87,14 @@ function subscribeOnSubmitClick(tabId) {
 											sendResponse(createdFolder);
 										})
 										.catch((jqHXR, textStatus) => {
-											console.error(JSON.stringify(error));
+											console.error(JSON.stringify(jqHXR ?? 'Unexpected error'));
 											sendResponse({ name: undefined });
 											alert(`Failed to create folder as week name: "${week_name}" `);
 										});
 								}
 							})
 							.catch((jqHXR, textStatus) => {
-								alert('Request failed: ' + textStatus);
+								console.error(`Request failed: ${JSON.stringify(jqHXR)}, ${textStatus}`);
 							})
 							.then(() => {
 								data.isInitStarted = false;
@@ -154,8 +156,10 @@ function subscribeOnSubmitClick(tabId) {
 		return true;
 	});
 
-	chrome.tabs.executeScript(tabId, {
-		file: './js/content.js',
+	chrome.scripting.executeScript({
+		target: { tabId: tabId },
+		func: init,
+		args: [tabId],
 	});
 }
 

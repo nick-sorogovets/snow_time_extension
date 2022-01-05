@@ -16,22 +16,36 @@ function getAuthToken(options) {
 function GetSubFolderListPromise(folder_url, token, folderId = null) {
 	folderId = folderId || getIdFromUrl(folder_url);
 
+	const data = {
+		corpora: 'user',
+		q: `mimeType = 'application/vnd.google-apps.folder' and '${folderId}' in parents`,
+		supportsTeamDrives: true,
+	};
+
+	const params = Object.keys(data)
+		.map((k) => `${k}=${encodeURIComponent(data[k])}`)
+		.join('&');
+
 	return new Promise((resolve, reject) => {
-		$.ajax({
-			url: CONSTANTS.APIS.FILES,
+		let request = new Request(`${CONSTANTS.APIS.FILES}?${params}`, {
 			method: 'GET',
-			crossDomain: true,
 			headers: {
-				Authorization: 'Bearer ' + token,
+				Accept: 'application/json',
+				Authorization: `Bearer ${token}`,
+				'X-Requested-With': 'XMLHttpRequest',
 			},
-			data: {
-				corpora: 'user',
-				q: `mimeType = 'application/vnd.google-apps.folder' and '${folderId}' in parents`,
-				supportsTeamDrives: true,
-			},
-		})
-			.done((response) => resolve(response.files))
-			.fail(reject);
+			credentials: 'same-origin',
+		});
+		fetch(request)
+			.then((response) => {
+				return response.json();
+			})
+			.then((data) => {
+				resolve(data.files);
+			})
+			.catch((error) => {
+				reject(error);
+			});
 	});
 }
 
@@ -78,18 +92,26 @@ function UploadScreenshot(options) {
 		close_delimiter;
 
 	return new Promise((resolve, reject) => {
-		$.ajax({
-			url: CONSTANTS.APIS.MULTIPART_UPLOAD,
+		let request = new Request(CONSTANTS.APIS.MULTIPART_UPLOAD, {
 			method: 'POST',
-			crossDomain: true,
 			headers: {
 				Authorization: 'Bearer ' + token,
 				'Content-Type': `multipart/related; boundary=${boundary}`,
 			},
-			data: multipartRequestBody,
-		})
-			.done(resolve)
-			.fail(reject);
+			body: multipartRequestBody,
+		});
+
+		fetch(request)
+			.then((response) => {
+				return response.json();
+			})
+			.then((result) => {
+				if (result.error) {
+					reject(result.error);
+				} else {
+					resolve(result);
+				}
+			});
 	});
 }
 
@@ -102,19 +124,28 @@ function CreateFolder(folderName, token, folderId) {
 	};
 
 	return new Promise((resolve, reject) => {
-		$.ajax({
-			url: CONSTANTS.APIS.FILES,
+		let request = new Request(CONSTANTS.APIS.FILES, {
 			method: 'POST',
 			headers: {
-				Authorization: 'Bearer ' + token,
+				Accept: 'application/json',
 				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`,
 			},
-			data: JSON.stringify(data),
-		})
-			.done((response) => {
-				resolve(response);
+			credentials: 'same-origin',
+			body: JSON.stringify(data),
+		});
+
+		fetch(request)
+			.then((response) => {
+				return response.json();
 			})
-			.fail(reject);
+			.then((result) => {
+				if (result.error) {
+					reject(result.error);
+				} else {
+					resolve(result);
+				}
+			});
 	});
 }
 
