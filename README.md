@@ -3,7 +3,7 @@
 Snow screenshot uploader
 ===============
 
-<img src="/img/icon.png" width="250">
+<img src="/img/icon.png" alt="logo" width="200">
 
 # Goal
 
@@ -16,7 +16,9 @@ That extension also allow to select directory defore upload.
 
 ## Usage
 
-#### Configure extension
+### Pop-up Screenshot
+![screenshot](/img/Screenshot_example.png)
+### Configure extension
 
 - Setup inital Google drive folder for upload and username, otherwize all screeenshots would be uploaded to root folder of the your Google Drive account.
 ![screenshot](/img/settings_example.png)
