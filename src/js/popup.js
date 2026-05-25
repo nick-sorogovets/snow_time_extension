@@ -9,9 +9,8 @@ import { qs, show, hide, toggle, setBusy, on } from './ui.js';
 import { initI18n, t } from './i18n.js';
 import { buildScreenshotFilename, isExtensionConfigured } from './filename.js';
 import { initTheme, watchTheme } from './theme.js';
+import { buildPickerUrl } from './picker-url.js';
 
-const PICKER_BASE =
-	'https://nick-sorogovets.github.io/snow_time_extension/picker/';
 const PENDING_TARGET_TTL_MS = 5 * 60 * 1000;
 
 const DEFAULTS = {
@@ -189,8 +188,7 @@ async function handleNewSubfolder() {
 }
 
 function openPicker(intent) {
-	const url = `${PICKER_BASE}?intent=${encodeURIComponent(intent)}`;
-	chrome.tabs.create({ url });
+	chrome.tabs.create({ url: buildPickerUrl(intent) });
 	setBanner('ok', t('banner_picker_opened'));
 }
 

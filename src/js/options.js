@@ -3,9 +3,7 @@ import { qs, qsa, show, hide, setBusy, setStatus, on } from './ui.js';
 import { initI18n, t, applyI18n, LOCALE_LABELS } from './i18n.js';
 import { initTheme, applyTheme, THEME_DEFAULT, VALID_THEMES } from './theme.js';
 import { samplePostfix } from './filename.js';
-
-const PICKER_BASE =
-	'https://nick-sorogovets.github.io/snow_time_extension/picker/';
+import { buildPickerUrl } from './picker-url.js';
 
 const DEFAULTS = {
 	folder_id: '',
@@ -114,8 +112,7 @@ function loadSettings() {
 }
 
 function openPicker(intent) {
-	const url = `${PICKER_BASE}?intent=${encodeURIComponent(intent)}`;
-	chrome.tabs.create({ url });
+	chrome.tabs.create({ url: buildPickerUrl(intent) });
 	setStatus(els.status, t('status_picker_opened'), 'info');
 }
 
