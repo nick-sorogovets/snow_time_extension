@@ -8,10 +8,36 @@ const ROOT = path.join(__dirname, '..');
 const BUILD_DIR = path.join(ROOT, 'build');
 const DIST_DIR = path.join(ROOT, 'dist');
 
+function collectManifestPaths(manifest) {
+	const paths = new Set();
+	if (manifest.icons) {
+		for (const iconPath of Object.values(manifest.icons)) paths.add(iconPath);
+	}
+	if (manifest.action?.default_icon) {
+		for (const iconPath of Object.values(manifest.action.default_icon)) {
+			paths.add(iconPath);
+		}
+	}
+	return [...paths];
+}
+
+function validateBuild(manifest) {
+	const missing = collectManifestPaths(manifest).filter(
+		(rel) => !fs.existsSync(path.join(BUILD_DIR, rel))
+	);
+	if (missing.length) {
+		throw new Error(
+			`Build is missing files referenced in manifest.json:\n${missing.map((p) => `  - ${p}`).join('\n')}`
+		);
+	}
+}
+
 function zipBuild() {
 	const manifest = JSON.parse(
-		fs.readFileSync(path.join(ROOT, 'src/manifest.json'), 'utf8')
+		fs.readFileSync(path.join(BUILD_DIR, 'manifest.json'), 'utf8')
 	);
+	validateBuild(manifest);
+
 	const en = JSON.parse(
 		fs.readFileSync(path.join(ROOT, 'src/i18n/en.json'), 'utf8')
 	);

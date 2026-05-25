@@ -4,11 +4,10 @@
 	"description": "__MSG_description__",
 	"default_locale": "en",
 	"version": "0.1.0",
-	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApgqVR33t7N7KEOmaTNzVo7r+cLdSawl9yPThY1p/zky/lM1bi3IRzp0uy3YJM10uO07FAYPXf9QnZjSH+W7OyY3RW0ovBpibW77pjSpCU91VVyloagFBTBkZCdJg/9AMivIkwnP2Agxs0cvtyauYkrNpTgCaJSvV3d+22xlrkyv+0BH5vSRVpVlRWW/LK5HUCCnURPYHCfoqKebX6ac3FI2ofRXWaTQxORfmFVbpC5IAF8wH0HpLy6C+AFY4wzJXBHwnPyvxVs16DOBM1nTN2tXDuYJzahM3NGcWGPXLHW2v6v+m30BvCWFVHMpQLY0s+GZJGEWO0/dVTmpTWDJ6iwIDAQAB",
 	"icons": {
-		"16": "./img/icon_16.png",
-		"48": "./img/icon_48.png",
-		"128": "./img/icon_128.png"
+		"16": "img/icon_16.png",
+		"48": "img/icon_48.png",
+		"128": "img/icon_128.png"
 	},
 	"permissions": [
 		"storage",
@@ -22,21 +21,21 @@
 	],
 	"action": {
 		"default_icon": {
-			"16": "./img/icon_16.png",
-			"48": "./img/icon_48.png",
-			"128": "./img/icon_128.png"
+			"16": "img/icon_16.png",
+			"48": "img/icon_48.png",
+			"128": "img/icon_128.png"
 		},
 		"default_popup": "popup.html"
 	},
 	"content_scripts": [
 		{
 			"matches": ["https://coxauto.service-now.com/time*"],
-			"js": ["./js/content.js"],
+			"js": ["js/content.js"],
 			"run_at": "document_idle"
 		}
 	],
 	"background": {
-		"service_worker": "./js/background.js",
+		"service_worker": "js/background.js",
 		"type": "module"
 	},
 	"content_security_policy": {
