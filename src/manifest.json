@@ -1,7 +1,8 @@
 {
 	"manifest_version": 3,
-	"name": "SNOW screenshot extension",
-	"description": "Take a screenshot of the current page and upload it to a chosen Google Drive folder.",
+	"name": "__MSG_name__",
+	"description": "__MSG_description__",
+	"default_locale": "en",
 	"version": "0.1.0",
 	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApgqVR33t7N7KEOmaTNzVo7r+cLdSawl9yPThY1p/zky/lM1bi3IRzp0uy3YJM10uO07FAYPXf9QnZjSH+W7OyY3RW0ovBpibW77pjSpCU91VVyloagFBTBkZCdJg/9AMivIkwnP2Agxs0cvtyauYkrNpTgCaJSvV3d+22xlrkyv+0BH5vSRVpVlRWW/LK5HUCCnURPYHCfoqKebX6ac3FI2ofRXWaTQxORfmFVbpC5IAF8wH0HpLy6C+AFY4wzJXBHwnPyvxVs16DOBM1nTN2tXDuYJzahM3NGcWGPXLHW2v6v+m30BvCWFVHMpQLY0s+GZJGEWO0/dVTmpTWDJ6iwIDAQAB",
 	"icons": {

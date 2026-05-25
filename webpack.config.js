@@ -46,6 +46,10 @@ function createCopyPlugin() {
 					new CleanCSS({ level: 2 }).minify(content.toString()).styles,
 			},
 			{
+				from: 'src/_locales',
+				to: '_locales',
+			},
+			{
 				from: 'src/manifest.json',
 				to: 'manifest.json',
 				transform: (content) => {

@@ -5,3 +5,4 @@ dist/
 .keys/
 .env
 src/js/i18n-data.js
+src/_locales/

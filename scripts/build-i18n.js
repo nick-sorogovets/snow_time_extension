@@ -6,6 +6,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const I18N_DIR = path.join(ROOT, 'src/i18n');
 const OUT_FILE = path.join(ROOT, 'src/js/i18n-data.js');
+const LOCALES_DIR = path.join(ROOT, 'src/_locales');
 const SCAN_DIRS = [
 	path.join(ROOT, 'src/js'),
 	path.join(ROOT, 'src'),
@@ -92,6 +93,32 @@ export const LOCALE_LABELS = ${labels};
 `;
 }
 
+const CWS_LOCALE_KEYS = {
+	name: 'extension_name',
+	description: 'extension_description',
+};
+
+function emitChromeLocales(locales) {
+	for (const [locale, bag] of Object.entries(locales)) {
+		const dir = path.join(LOCALES_DIR, locale);
+		fs.mkdirSync(dir, { recursive: true });
+		const messages = {};
+		for (const [cwsKey, srcKey] of Object.entries(CWS_LOCALE_KEYS)) {
+			const value = bag[srcKey] ?? locales.en[srcKey];
+			if (value == null) {
+				console.error(`[i18n] missing ${srcKey} for locale ${locale}`);
+				process.exit(1);
+			}
+			messages[cwsKey] = { message: value };
+		}
+		const outPath = path.join(dir, 'messages.json');
+		fs.writeFileSync(outPath, JSON.stringify(messages, null, '\t') + '\n', 'utf8');
+	}
+	console.log(
+		`[i18n] wrote ${LOCALES_DIR}/<lang>/messages.json (${Object.keys(locales).length} locales)`
+	);
+}
+
 function main() {
 	const files = [];
 	for (const dir of SCAN_DIRS) walkFiles(dir, files);
@@ -113,6 +140,7 @@ function main() {
 	const messages = pickMessages(locales, keys);
 	fs.writeFileSync(OUT_FILE, emit(messages), 'utf8');
 	console.log(`[i18n] wrote ${OUT_FILE} (${keys.size} keys, ${Object.keys(messages).length} locales)`);
+	emitChromeLocales(locales);
 }
 
 main();

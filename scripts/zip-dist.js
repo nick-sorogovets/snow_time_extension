@@ -12,7 +12,14 @@ function zipBuild() {
 	const manifest = JSON.parse(
 		fs.readFileSync(path.join(ROOT, 'src/manifest.json'), 'utf8')
 	);
-	const zipName = `${manifest.name} v${manifest.version}.zip`;
+	const en = JSON.parse(
+		fs.readFileSync(path.join(ROOT, 'src/i18n/en.json'), 'utf8')
+	);
+	const displayName =
+		manifest.name.startsWith('__MSG_') && en.extension_name
+			? en.extension_name
+			: manifest.name;
+	const zipName = `${displayName} v${manifest.version}.zip`;
 	const zipPath = path.join(DIST_DIR, zipName);
 
 	fs.mkdirSync(DIST_DIR, { recursive: true });

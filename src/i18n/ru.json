@@ -1,4 +1,6 @@
 {
+	"extension_name": "Расширение SNOW Screenshot",
+	"extension_description": "Захват текущей страницы (или всей страницы) и загрузка PNG-скриншотов в выбранную папку Google Drive.",
 	"app_name": "Snow Screenshot",
 	"auth_checking": "…",
 	"configure_first": "Сначала настройте расширение.",

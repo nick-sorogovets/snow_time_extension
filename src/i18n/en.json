@@ -1,4 +1,6 @@
 {
+	"extension_name": "SNOW Screenshot Extension",
+	"extension_description": "Capture the current page (or full page) and upload PNG screenshots to a Google Drive folder you choose.",
 	"app_name": "Snow Screenshot",
 	"auth_checking": "…",
 	"configure_first": "Configure the extension first.",

@@ -1,4 +1,6 @@
 {
+	"extension_name": "Extensión SNOW Screenshot",
+	"extension_description": "Captura la página actual (o la página completa) y sube capturas PNG a una carpeta de Google Drive que elijas.",
 	"app_name": "Snow Screenshot",
 	"auth_checking": "…",
 	"configure_first": "Configure la extensión primero.",

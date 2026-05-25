@@ -1,4 +1,6 @@
 {
+	"extension_name": "Rozszerzenie SNOW Screenshot",
+	"extension_description": "Przechwyć bieżącą stronę (lub całą stronę) i prześlij zrzuty PNG do wybranego folderu Google Drive.",
 	"app_name": "Snow Screenshot",
 	"auth_checking": "…",
 	"configure_first": "Najpierw skonfiguruj rozszerzenie.",
