@@ -1,33 +1,135 @@
+# SNOW Screenshot
 
+<img src="/img/icon.png" alt="SNOW Screenshot logo" width="120">
 
-Snow screenshot uploader
-===============
+Chrome extension for **ServiceNow Time Entry** (`coxauto.service-now.com/time`): capture the current page (or the full loaded page), preview it, and upload PNG files to a **Google Drive folder** you choose. Optional automation uploads a screenshot when you click **Submit** on the SNOW timesheet.
 
-<img src="/img/icon.png" alt="logo" width="200">
+**Current version:** `0.1.0` (Manifest V3)
 
-# Goal
+---
 
-Snow screenshot uploader needed to make screenshot of current page and upload it to specific folder on Google drive.
-That extension also allow to select directory defore upload.
+## What's new since 0.0.8
 
-## Installation
+### 0.0.8 (baseline)
 
+- Migrated to **Manifest V3** (service worker background, updated APIs).
+- Screenshot capture and upload to a configured Drive folder.
+- SNOW content script: auto-upload on Submit when enabled.
+- Weekly sub-folder creation for organized uploads.
 
+### After 0.0.8 (commits since `055582b`)
+
+| Change | Description |
+| ------ | ----------- |
+| **Google Drive Picker (GitHub Pages)** | Pick an existing Drive folder from Settings (**Pick existing…**) or choose an upload target from the popup (**Pick**). Picker runs at [nick-sorogovets.github.io/snow_time_extension/picker/](https://nick-sorogovets.github.io/snow_time_extension/picker/) because MV3 CSP blocks embedding Picker inside the extension. |
+| **Privacy policy** | [`PRIVACY.md`](PRIVACY.md) documents data use for Chrome Web Store. |
+| **Picker UI theme** | Light / dark theme on the hosted Picker page. |
+
+### 0.1.0 — UI redesign & capture options
+
+| Feature | Description |
+| ------- | ----------- |
+| **New popup & Settings UI** | Card layout, auth status, folder breadcrumb, browse sub-folders, **+ New** folder, preview before upload. |
+| **Localization** | English, Russian, Italian, Spanish, Portuguese, Polish — language selector in Settings. |
+| **Theme** | Light, dark, or **system** (follows browser) in Settings; applies to popup and options. |
+| **Screenshot modes** | **Visible area** or **Full page** (scroll-stitch of loaded content). |
+| **Full-page limits** | Configurable max page height (1,000–32,000 px) when Full page is selected. |
+| **File naming** | **Filename prefix** (custom text) or **site domain** (e.g. `bool.dev_2026-05-25.png`). **Filename postfix**: short date (default), long date (`YYYY-MMMM-DD`), date & time, or incrementing number (counter advances **on upload only**). |
+| **Technical** | ES modules, no jQuery; vector logo (`logo.svg`); `scripting` permission for full-page capture only on user action. |
+
+---
+
+## Installation (development)
+
+1. Clone the repo and install dependencies (Node **22 LTS**, see `.nvmrc`):
+
+   ```bash
+   nvm use
+   cp .env.example .env   # required for npm run build
+   npm install
+   npm run i18n
+   ```
+
+2. In Chrome: **Extensions** → **Manage extensions** → enable **Developer mode** → **Load unpacked** → select the **`src/`** folder.
+
+3. Open **Settings** (extension options): pick or create a Drive folder, set filename options, and sign in to Google when prompted.
+
+For Google Cloud OAuth, Picker API, GitHub Pages deploy, and Chrome Web Store packaging, see **[Deploy.md](Deploy.md)**.
+
+---
+
+## Screenshots
+
+### Pop-up Screenshot
+
+![screenshot](/img/Screenshot_example.png)
+
+### Configure extension
+
+Set up the Google Drive upload folder, filename prefix or domain, screenshot mode, language, and theme in Settings.
+
+![screenshot](/img/settings_example.png)
+
+---
 
 ## Usage
 
-### Pop-up Screenshot
-![screenshot](/img/Screenshot_example.png)
-### Configure extension
+### Popup — capture & upload
 
-- Setup inital Google drive folder for upload and username, otherwize all screeenshots would be uploaded to root folder of the your Google Drive account.
-![screenshot](/img/settings_example.png)
+1. Click the extension icon on a normal web page (or on SNOW with the popup open).
+2. Choose upload folder (**Pick**, **Browse**, or **+ New**).
+3. **Capture** — visible area or full page (per Settings). Full-page capture shows a spinner and “Capturing…” while slices are stitched.
+4. **Upload** — sends the PNG to the selected folder. After upload, open the file in Drive from the success banner.
 
+### Settings
+
+| Section | Options |
+| ------- | ------- |
+| **General** | Language, theme (system / light / dark). |
+| **Google Drive folder** | Pick existing folder, create root folder, filename prefix or domain prefix, filename postfix. |
+| **Screenshot** | Visible vs full page; max page height (full page only). |
+| **Automation** | Capture on popup open; auto-upload on SNOW Submit. |
+
+Without a configured folder (and filename prefix when domain mode is off), the popup asks you to complete Settings first.
+
+### SNOW automation
+
+On `https://coxauto.service-now.com/time*`, with **Auto-upload on SNOW Submit click** enabled, clicking **Submit** captures the active tab and uploads to the configured folder (optionally under a week-named sub-folder).
+
+---
+
+## Build release zip
+
+```bash
+npm run build
+```
+
+Runs i18n generation, **Webpack** production build into `build/`, and creates `dist/SNOW screenshot extension v0.1.0.zip` (production OAuth client id in manifest). Requires **Node 22 LTS** (`.nvmrc`). See [Deploy.md](Deploy.md) §3.2.
+
+---
+
+## Project layout
+
+| Path | Purpose |
+| ---- | ------- |
+| `src/` | Load-unpacked extension source (HTML, JS modules, CSS, i18n JSON). |
+| `src/js/i18n-data.js` | Generated by `npm run i18n` — required before load unpacked. |
+| `picker/` | Hosted Google Picker (GitHub Pages). |
+| `Deploy.md` | OAuth, CWS publish, smoke tests. |
+| `PRIVACY.md` | Privacy policy for store listing. |
+| `webpack.config.js` | Production build (minify, prod OAuth client id). |
+| `PLAN.md` | Redesign / phase notes. |
+
+---
 
 ## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-Please make sure to update tests as appropriate.
+Pull requests are welcome. For major changes, open an issue first.
+
+Please run `npm run i18n` after editing `src/i18n/*.json` or UI strings referenced by `scripts/build-i18n.js`.
+
+---
 
 ## License
+
 [MIT](https://github.com/nick-sorogovets/snow_time_extension/blob/master/LICENSE)

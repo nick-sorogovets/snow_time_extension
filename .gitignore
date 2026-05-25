@@ -2,3 +2,6 @@ node_modules/
 .idea/
 build/
 dist/
+.keys/
+.env
+src/js/i18n-data.js

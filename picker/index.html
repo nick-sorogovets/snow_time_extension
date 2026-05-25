@@ -1,19 +1,41 @@
+---
+layout: null
+---
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="referrer" content="no-referrer" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="color-scheme" content="light dark" />
 		<title>Pick a Drive folder — Snow Screenshot</title>
+		<script>
+			(function () {
+				var mq = window.matchMedia('(prefers-color-scheme: dark)');
+				function apply() {
+					document.documentElement.setAttribute(
+						'data-theme',
+						mq.matches ? 'dark' : 'light'
+					);
+				}
+				apply();
+				if (mq.addEventListener) {
+					mq.addEventListener('change', apply);
+				} else if (mq.addListener) {
+					mq.addListener(apply);
+				}
+			})();
+		</script>
 		<style>
-			:root {
-				color-scheme: light dark;
+			:root,
+			html[data-theme='light'] {
+				color-scheme: light;
 
 				--brand-500: #ff6a00;
 				--brand-600: #e65f00;
 
-				--bg: #ffffff;
-				--bg-muted: #f6f7f9;
+				--bg: #f6f7f9;
+				--bg-muted: #ffffff;
 				--bg-log: #ffffff;
 				--border: #e4e7eb;
 
@@ -27,8 +49,28 @@
 				--shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06);
 			}
 
+			html[data-theme='dark'] {
+				color-scheme: dark;
+
+				--bg: #15171c;
+				--bg-muted: #1c1f26;
+				--bg-log: #0d0f13;
+				--border: #2a2e36;
+
+				--text: #e7eaf0;
+				--text-muted: #a4adba;
+
+				--ok: #54c689;
+				--err: #ff7a6e;
+				--warn: #f0bc55;
+
+				--shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+			}
+
 			@media (prefers-color-scheme: dark) {
-				:root {
+				:root:not([data-theme='light']) {
+					color-scheme: dark;
+
 					--bg: #15171c;
 					--bg-muted: #1c1f26;
 					--bg-log: #0d0f13;
@@ -76,6 +118,7 @@
 				margin: 0;
 				font-size: 15px;
 				font-weight: 600;
+				color: var(--text);
 			}
 
 			main {
@@ -91,6 +134,11 @@
 				line-height: 1.45;
 			}
 
+			.hint-picker-ui {
+				font-size: 12px;
+				opacity: 0.85;
+			}
+
 			#log {
 				margin-top: 12px;
 				padding: 10px 12px;
@@ -102,6 +150,12 @@
 				white-space: pre-wrap;
 				min-height: 80px;
 				color: var(--text);
+			}
+
+			body.picker-open header,
+			body.picker-open main {
+				opacity: 0.35;
+				pointer-events: none;
 			}
 
 			.row {
@@ -132,6 +186,10 @@
 				Select a folder for Snow Screenshot. The Google Picker will appear on top of
 				this page.
 			</p>
+			<p class="hint-picker-ui">
+				This page follows your system light/dark setting. The Google Picker dialog
+				itself always uses Google&apos;s light UI — we cannot change that.
+			</p>
 			<div id="log" aria-live="polite"></div>
 		</main>
 
@@ -145,7 +203,11 @@
 						'[' + new Date().toISOString().slice(11, 19) + '] ' + text;
 					logEl.appendChild(row);
 				};
-				window.__pickerLog('picker page loaded');
+				window.__pickerMarkOpen = function () {
+					document.body.classList.add('picker-open');
+				};
+				const theme = document.documentElement.getAttribute('data-theme');
+				window.__pickerLog('picker page loaded (theme=' + theme + ')');
 				window.addEventListener('error', (e) => {
 					window.__pickerLog('JS error: ' + (e.message || e.error), 'err');
 				});

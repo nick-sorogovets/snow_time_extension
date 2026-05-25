@@ -1,1 +1,15 @@
 theme: jekyll-theme-midnight
+exclude:
+  - src/
+  - .keys/
+  - PLAN.md
+  - Deploy.md
+  - PRIVACY.md
+  - gulpfile.js
+  - package.json
+  - package-lock.json
+  - node_modules/
+  - build/
+  - dist/
+include:
+  - picker

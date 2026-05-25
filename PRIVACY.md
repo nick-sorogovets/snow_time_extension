@@ -46,6 +46,8 @@ stays under your control:
 | Google Drive folder ID and name       | `chrome.storage.sync` (your Chrome profile)                                                     | Remember which Drive folder screenshots are uploaded to                 |
 | Username prefix                       | `chrome.storage.sync`                                                                           | Build screenshot file names like `<username>_YYYY-MM-DD.png`            |
 | Automation toggles                    | `chrome.storage.sync`                                                                           | Remember the auto‑capture / auto‑upload preferences                     |
+| Language preference                   | `chrome.storage.sync`                                                                           | Remember your chosen UI language (EN, RU, IT, ES, PT, PL)               |
+| Screenshot mode (visible / full page) | `chrome.storage.sync`                                                                           | Remember whether to capture viewport only or the loaded page height     |
 | Google OAuth access token             | Cached in memory only, managed by `chrome.identity`                                             | Authenticate Drive API calls; never persisted to disk by the Extension  |
 | Screenshot image (PNG)                | Generated on demand, sent directly to Google Drive over HTTPS                                   | The screenshot you asked the Extension to upload                        |
 | The current page URL of the SNOW timesheet (`https://coxauto.service-now.com/time*`) | Read locally by a content script for the duration of the page visit | Detect the SNOW Submit button and the current week label |
@@ -71,7 +73,10 @@ The Extension **does not** collect, transmit or store:
   machine.
 - **Screenshots** are generated only when you explicitly press the
   *Capture* button or, if you enable it, when you press the *Submit*
-  button on the SNOW timesheet page. Screenshots are uploaded directly
+  button on the SNOW timesheet page. In **full page** mode the Extension
+  temporarily scrolls the active tab and stitches viewport captures
+  locally in your browser; no page content is sent anywhere except the
+  final PNG uploaded to your Drive. Screenshots are uploaded directly
   from your browser to your own Google Drive over HTTPS.
 - **OAuth access tokens** are obtained through `chrome.identity` from
   Google’s servers and used solely as `Authorization: Bearer` headers on

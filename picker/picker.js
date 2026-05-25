@@ -79,6 +79,7 @@
 			.build();
 
 		picker.setVisible(true);
+		if (window.__pickerMarkOpen) window.__pickerMarkOpen();
 		log('Picker.setVisible(true)', 'ok');
 	}
 

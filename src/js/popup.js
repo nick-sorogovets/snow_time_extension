@@ -1,409 +1,408 @@
 import {
-	GetSubFolderListPromise,
-	getIdFromUrl,
 	getAuthToken,
-	CaptureScreenshot,
+	GetSubFolderList,
+	CreateFolder,
+	captureTab,
 	UploadScreenshot,
-	GetFileUrls,
 } from './api.js';
+import { qs, show, hide, toggle, setBusy, on } from './ui.js';
+import { initI18n, t } from './i18n.js';
+import { buildScreenshotFilename, isExtensionConfigured } from './filename.js';
+import { initTheme, watchTheme } from './theme.js';
 
-let settings = {};
-let data = {};
+const PICKER_BASE =
+	'https://nick-sorogovets.github.io/snow_time_extension/picker/';
+const PENDING_TARGET_TTL_MS = 5 * 60 * 1000;
 
-const DEFAULT_SETTINGS = {
-	folder_url: '',
+const DEFAULTS = {
+	folder_id: '',
+	folder_name: '',
 	username: '',
+	filename_use_domain: false,
+	filename_postfix: 'short_date',
 	auto_screenshot: false,
 	auto_upload: false,
+	language: 'en',
+	theme: 'system',
+	screenshot_mode: 'visible',
+	max_page_height: 15000,
 };
 
-const CONSTANTS = {
-	DEFAULT_SETTINGS,
-	IDS: {
-		AUTHORIZE_BTN: '#authorize_button',
-		GET_FOLDERS_BUTTON: '#get_subfolders_button',
-		CURRENT_FOLDER: '#currentFolder',
-		TAKE_SCREENSHOT_BTN: '#take-screenshot-button',
-		SCREENSHOT_CONTAINER: '#screenshot',
-		SCREENSHOT_PREVIEW: '#screenshot-preview',
-		FOLDER_LIST: '#folders_list',
-		UPLOAD_BUTTON: '#upload_screenshot_button',
-		OPTIONS_URL: '#options_url',
-		OPTIONS_ERROR: '#options_error',
-	},
-	APIS: {
-		GET_FILES: 'https://www.googleapis.com/drive/v3/files',
-		MULTIPART_UPLOAD: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-	},
+const els = {};
+const state = {
+	settings: { ...DEFAULTS },
+	token: null,
+	rootFolder: null,
+	currentFolder: null,
+	breadcrumb: [],
+	dataUrl: null,
+	filename: null,
+	captureTabUrl: null,
+	uploadedFile: null,
 };
 
-function takeScreenshot() {
-	$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).setBusy(true);
-
-	CaptureScreenshot().then((dataUrl) => {
-		$(CONSTANTS.IDS.SCREENSHOT_PREVIEW).attr('src', dataUrl);
-		$(CONSTANTS.IDS.SCREENSHOT_CONTAINER).show();
-
-		const today = new Date();
-		const now = today.toISOString().substring(0, 10);
-		const filename = `${settings.username}_${now}.png`;
-
-		$(CONSTANTS.IDS.SCREENSHOT_PREVIEW).attr('alt', filename);
-
-		console.log(filename);
-
-		data = {
-			...data,
-			href: dataUrl,
-			filename: filename,
-		};
-
-		$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).setBusy(false);
-	});
+function setAuthState(kind, labelKey) {
+	els.authPill.dataset.state = kind;
+	els.authText.textContent = t(labelKey);
+	if (kind === 'connected') {
+		hide(els.authorizeBtn);
+	} else {
+		show(els.authorizeBtn);
+	}
 }
 
-function getListOfSubFolders(folderId = null) {
-	$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).setBusy(true);
-
-	const { folder_url } = settings;
-
-	if (folderId === null) {
-		$(CONSTANTS.IDS.CURRENT_FOLDER).html('<strong>Root</strong>');
-		data = {
-			...data,
-			selectedFolder: { id: getIdFromUrl(folder_url) },
-		};
+function setBanner(kind, html) {
+	els.statusBanner.className = `banner banner-${kind}`;
+	els.statusBanner.innerHTML = '';
+	if (typeof html === 'string') {
+		els.statusBanner.append(document.createTextNode(html));
+	} else if (html instanceof Node) {
+		els.statusBanner.append(html);
 	}
+	show(els.statusBanner);
+}
 
-	GetSubFolderListPromise(folder_url, data.token, folderId)
-		.then((folders) => {
-			data = {
-				...data,
-				folders,
-			};
-			renderFolderList(folders);
-		})
-		.catch((error) => {
-			alert(`Error get sub-folders: ${error?.responseJSON?.error?.message}`);
-			showOptionError();
-		})
-		.then(() => {
-			$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).setBusy(false);
-		});
+function clearBanner() {
+	hide(els.statusBanner);
+	els.statusBanner.replaceChildren();
+}
+
+function renderBreadcrumb() {
+	els.breadcrumb.replaceChildren();
+	if (!state.breadcrumb.length) {
+		const span = document.createElement('span');
+		span.className = 'muted';
+		span.textContent = t('no_folder_selected');
+		els.breadcrumb.append(span);
+		return;
+	}
+	state.breadcrumb.forEach((node, i) => {
+		const a = document.createElement('button');
+		a.type = 'button';
+		a.className = 'crumb';
+		a.textContent = node.name;
+		a.addEventListener('click', () => navigateTo(i));
+		els.breadcrumb.append(a);
+		if (i < state.breadcrumb.length - 1) {
+			const sep = document.createElement('span');
+			sep.className = 'crumb-sep';
+			sep.textContent = '›';
+			els.breadcrumb.append(sep);
+		}
+	});
 }
 
 function renderFolderList(folders) {
-	$(CONSTANTS.IDS.FOLDER_LIST).empty();
+	els.foldersList.replaceChildren();
+	if (!folders.length) {
+		const li = document.createElement('li');
+		li.className = 'folder-empty muted';
+		li.textContent = t('no_subfolders');
+		els.foldersList.append(li);
+		show(els.foldersList);
+		return;
+	}
+	folders.forEach((folder) => {
+		const li = document.createElement('li');
+		li.className = 'folder-item';
+		li.tabIndex = 0;
+		li.setAttribute('role', 'option');
 
-	folders.map((folder) => {
-		let element = $(`<li data-id="${folder.id}" class="folder">${folder.name}</li>`);
-		element.click(folder.id, (event) => {
-			data = {
-				...data,
-				selectedFolder: folder,
-			};
-			getListOfSubFolders(event.data);
-			updateSelectedFolder();
+		const ico = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		ico.setAttribute('aria-hidden', 'true');
+		ico.classList.add('folder-ico');
+		const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+		use.setAttribute('href', '#i-folder');
+		ico.append(use);
+
+		const name = document.createElement('span');
+		name.textContent = folder.name;
+
+		li.append(ico, name);
+		li.addEventListener('click', () => enterFolder(folder));
+		li.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				enterFolder(folder);
+			}
 		});
-		$(CONSTANTS.IDS.FOLDER_LIST).append(element);
+		els.foldersList.append(li);
 	});
+	show(els.foldersList);
 }
 
-function updateSelectedFolder() {
-	const { selectedFolder } = data;
-	if (selectedFolder) {
-		$(CONSTANTS.IDS.CURRENT_FOLDER).append(` > <strong>${selectedFolder.name}</strong>`);
+async function loadFolderListing(folder) {
+	if (!state.token) return;
+	setBusy(els.browseBtn, true);
+	try {
+		const folders = await GetSubFolderList(state.token, folder.id);
+		renderFolderList(folders);
+	} catch (err) {
+		console.error(err);
+		setBanner('error', t('err_list_folders', { error: err.message }));
+	} finally {
+		setBusy(els.browseBtn, false);
 	}
 }
 
-function uploadScreenshot() {
-	$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(true);
-	const { selectedFolder, href, filename } = data;
-
-	const options = {
-		folderId: selectedFolder.id,
-		token: data.token,
-		dataUrl: href,
-		filename,
-	};
-
-	UploadScreenshot(options)
-		.then((response) => {
-			console.log(response);
-
-			data = {
-				...data,
-				uploadedFile: response,
-			};
-
-			$('#msg-success').show();
-			$('#view_link').html(response.name);
-			getFileUrls();
-		})
-		.catch((jqXHR, textStatus) => {
-			alert('Request failed: ' + textStatus);
-			$('#msg-error').show();
-			$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
-		});
+function navigateTo(index) {
+	state.breadcrumb = state.breadcrumb.slice(0, index + 1);
+	state.currentFolder = state.breadcrumb[state.breadcrumb.length - 1];
+	renderBreadcrumb();
+	loadFolderListing(state.currentFolder);
 }
 
-function getFileUrls() {
-	const { uploadedFile, token } = data;
-	GetFileUrls(uploadedFile.id, token)
-		.then((response) => {
-			data = {
-				...data,
-				uploadedFile: {
-					...uploadedFile,
-					viewLink: response.webViewLink,
-				},
-			};
-
-			$('#view_link').attr('href', response.webViewLink);
-			$('#view_link').click(() => {
-				chrome.tabs.create({
-					url: response.webViewLink,
-				});
-			});
-		})
-		.catch((jqXHR, textStatus) => {
-			alert('Request failed: ' + textStatus);
-			$('#msg-error').show();
-		})
-		.then(() => {
-			$(CONSTANTS.IDS.UPLOAD_BUTTON).setBusy(false);
-		});
+function enterFolder(folder) {
+	state.breadcrumb.push(folder);
+	state.currentFolder = folder;
+	renderBreadcrumb();
+	loadFolderListing(folder);
 }
 
-/**
- * Setting initialization
- */
-function loadSettings() {
-	chrome.storage.sync.get(
-		{
-			folder_url: DEFAULT_SETTINGS.folder_url,
-			username: DEFAULT_SETTINGS.username,
-			auto_screenshot: DEFAULT_SETTINGS.auto_screenshot,
-			auto_upload: DEFAULT_SETTINGS.auto_upload,
-		},
-		function (items) {
-			const { folder_url, username, auto_screenshot } = items;
-
-			if (!folder_url || !username) {
-				showOptionError();
-				return;
-			}
-
-			settings = items;
-			data = {
-				...data,
-				selectedFolder: { id: getIdFromUrl(items.folder_url) },
-			};
-			handleClientLoad();
-
-			if (auto_screenshot) {
-				takeScreenshot();
-			}
+async function handleNewSubfolder() {
+	if (!state.token || !state.currentFolder) return;
+	const raw = window.prompt(t('prompt_new_folder'), '');
+	if (!raw) return;
+	const name = raw.trim();
+	if (!name) return;
+	clearBanner();
+	setBusy(els.newFolderBtn, true);
+	try {
+		const existing = await GetSubFolderList(state.token, state.currentFolder.id);
+		const match = existing.find(
+			(f) => f.name.toLowerCase() === name.toLowerCase()
+		);
+		if (match) {
+			enterFolder({ id: match.id, name: match.name });
+			setBanner('ok', t('banner_reuse_folder', { name: match.name }));
+			return;
 		}
+		const folder = await CreateFolder(state.token, name, state.currentFolder.id);
+		enterFolder({ id: folder.id, name: folder.name });
+		setBanner('ok', t('banner_created_folder', { name: folder.name }));
+	} catch (err) {
+		console.error(err);
+		setBanner('error', t('err_create_folder', { error: err.message }));
+	} finally {
+		setBusy(els.newFolderBtn, false);
+	}
+}
+
+function openPicker(intent) {
+	const url = `${PICKER_BASE}?intent=${encodeURIComponent(intent)}`;
+	chrome.tabs.create({ url });
+	setBanner('ok', t('banner_picker_opened'));
+}
+
+function handlePickFolder() {
+	openPicker('set-upload-target');
+}
+
+async function applyPendingUploadTarget() {
+	const { pending_upload_target: pending } = await chrome.storage.session.get(
+		'pending_upload_target'
 	);
-}
+	if (!pending || !pending.id) return;
 
-function toggleZoom(element) {
-	if (element) {
-		var isZoomed = element?.hasAttribute('zoomed');
-		if (isZoomed) {
-			element.style.width = '';
-			element.removeAttribute('zoomed');
-		} else {
-			element.style.width = `${element.clientWidth * 2}px`;
-			element.setAttribute('zoomed', 'true');
-		}
+	if (Date.now() - (pending.ts || 0) > PENDING_TARGET_TTL_MS) {
+		await chrome.storage.session.remove('pending_upload_target');
+		return;
 	}
-}
 
-function showOptionError() {
-	let optionUrl = chrome.runtime.getURL('options.html');
-	optionUrl = `${optionUrl}?origin=popup.html`;
-	$(CONSTANTS.IDS.OPTIONS_URL).attr('href', optionUrl);
-	$(CONSTANTS.IDS.OPTIONS_ERROR).show();
+	await chrome.storage.session.remove('pending_upload_target');
 
-	//Disable controls until user is configure settings
-	$(CONSTANTS.IDS.GET_FOLDERS_BUTTON).disable();
-	$(CONSTANTS.IDS.TAKE_SCREENSHOT_BTN).disable();
-	$(CONSTANTS.AUTHORIZE_BTN).disable();
-}
+	const root = state.rootFolder;
+	if (!root) return;
 
-/**
- *  On load, called to load the auth2 library and API client library.
- */
-function handleClientLoad() {
-	getAuthToken({
-		interactive: false,
-		callback: getAuthTokenSilentCallback,
-	});
-}
-
-function getAuthTokenSilentCallback(token) {
-	// Catch chrome error if user is not authorized.
-	if (chrome.runtime.lastError) {
-		console.error(chrome.runtime.lastError.message);
-		showAuthNotification();
-		$(CONSTANTS.IDS.AUTHORIZE_BTN).show();
+	const idx = state.breadcrumb.findIndex((n) => n.id === pending.id);
+	if (idx >= 0) {
+		state.breadcrumb = state.breadcrumb.slice(0, idx + 1);
 	} else {
-		data = {
-			...data,
-			token,
-		};
-		console.log('Authentication success ', token);
-		$(CONSTANTS.IDS.AUTHORIZE_BTN).hide();
+		state.breadcrumb = [root, { id: pending.id, name: pending.name }];
 	}
+	state.currentFolder = { id: pending.id, name: pending.name };
+	renderBreadcrumb();
+	setBanner('ok', t('banner_upload_target', { name: pending.name }));
 }
 
-function showAuthNotification() {
-	const options = {
-		id: 'start-auth',
-		iconUrl: 'icon.png',
-		title: 'SNOW screenshot upload extension',
-		message: 'Click here to authorize access to GDrive',
-	};
-	createBasicNotification(options);
-}
-
-function createBasicNotification(options) {
-	const notificationOptions = {
-		type: 'basic',
-		iconUrl: options.iconUrl, // Relative to Chrome dir or remote URL must be whitelisted in manifest.
-		title: options.title,
-		message: options.message,
-		isClickable: true,
-	};
-	chrome.notifications.create(options.id, notificationOptions, function (notificationId) {});
-}
-
-/**
- * User finished authorizing, start getting Google count.
- *
- * @param {string} token - Current users access_token.
- */
-function getAuthTokenInteractiveCallback(token) {
-	// Catch chrome error if user is not authorized.
-	if (chrome.runtime.lastError) {
-		console.error(chrome.runtime.lastError);
-		showAuthNotification();
-		$(CONSTANTS.IDS.AUTHORIZE_BTN).show();
-	} else {
-		data = {
-			...data,
-			token,
-		};
-		$(CONSTANTS.IDS.AUTHORIZE_BTN).hide();
-		console.log('Authentication success', token);
+async function takeScreenshot() {
+	clearBanner();
+	const isFullPage = (state.settings.screenshot_mode || 'visible') === 'full_page';
+	if (isFullPage) {
+		els.captureBtn.classList.add('capture-progress');
 	}
-}
-
-/**
- *  Sign in the user upon button click.
- */
-function handleAuthClick(event) {
-	getAuthTokenInteractive();
-}
-
-function getAuthTokenInteractive() {
-	getAuthToken({
-		interactive: true,
-		callback: getAuthTokenInteractiveCallback,
-	});
-}
-
-/**
- * Triggered anytime user clicks on a desktop notification.
- */
-function notificationClicked(notificationId) {
-	// User clicked on notification to start auth flow.
-	if (notificationId === 'start-auth') {
-		getAuthTokenInteractive();
-	}
-	clearNotification(notificationId);
-}
-
-/**
- * Clear a desktop notification.
- *
- * @param {string} notificationId - Id of notification to clear.
- */
-function clearNotification(notificationId) {
-	chrome.notifications.clear(notificationId, function (wasCleared) {});
-}
-
-/**
- * Wire up Chrome event listeners.
- */
-chrome.notifications.onClicked.addListener(notificationClicked);
-
-document.addEventListener('DOMContentLoaded', () => {
-	const btnGetData = document.getElementById('take-screenshot-button');
-	btnGetData.addEventListener('click', () => {
-		takeScreenshot();
-	});
-
-	const authorizeButton = document.getElementById('authorize_button');
-	authorizeButton.addEventListener('click', () => {
-		handleAuthClick();
-	});
-
-	const callApiButton = document.getElementById('get_subfolders_button');
-	callApiButton.addEventListener('click', () => {
-		getListOfSubFolders();
-	});
-
-	const uploadButton = document.getElementById('upload_screenshot_button');
-	uploadButton.addEventListener('click', () => {
-		uploadScreenshot();
-	});
-
-	const screenshotPreview = document.getElementById('screenshot-preview');
-	screenshotPreview?.addEventListener('click', (event) => {
-		toggleZoom(event.target);
-	});
-
-	//Load Settings
-	loadSettings();
-});
-
-$.fn.extend({
-	setBusy: function (isBusy = false) {
-		if (isBusy === true) {
-			$(this).disable();
-			$(this).showSpinner();
-		} else {
-			$(this).enable();
-			$(this).hideSpinner();
-		}
-	},
-	disable: function () {
-		$(this).prop('disabled', true);
-	},
-	enable: function () {
-		$(this).prop('disabled', false);
-	},
-	showSpinner: function () {
-		const position = $(this).position();
-		const elementWidth = $(this).outerWidth(true);
-		const elementHeight = $(this).outerHeight(true);
-
-		const top = position.top + elementHeight / 2 - 10;
-		const left = position.left + elementWidth;
-		$('#ajax-spinner').show().css({
-			top,
-			left,
+	setBusy(els.captureBtn, true, isFullPage ? { label: t('capturing') } : undefined);
+	try {
+		const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+		const dataUrl = await captureTab({
+			tabId: tab?.id,
+			windowId: tab?.windowId,
+			mode: state.settings.screenshot_mode || 'visible',
+			maxHeight: state.settings.max_page_height || DEFAULTS.max_page_height,
 		});
+		state.dataUrl = dataUrl;
+		state.captureTabUrl = tab?.url || null;
+		state.filename = await buildScreenshotFilename(state.settings, state.captureTabUrl, {
+			advanceIncrement: false,
+		});
+		els.preview.src = dataUrl;
+		els.preview.alt = state.filename;
+		show(els.previewSection);
+		els.uploadBtn.disabled = !state.token;
+	} catch (err) {
+		console.error(err);
+		if (err.message === 'capture_restricted') {
+			setBanner('error', t('err_capture_restricted'));
+		} else {
+			setBanner('error', t('err_capture', { error: err.message }));
+		}
+	} finally {
+		setBusy(els.captureBtn, false);
+		els.captureBtn.classList.remove('capture-progress');
+	}
+}
 
-		$(this).css({ paddingRight: 42 });
-	},
-	hideSpinner: function () {
-		$('#ajax-spinner').hide();
-		$(this).css({ paddingRight: 12 });
-	},
+async function uploadScreenshot() {
+	if (!state.dataUrl || !state.currentFolder || !state.token) return;
+	clearBanner();
+	setBusy(els.uploadBtn, true);
+	try {
+		const filename = await buildScreenshotFilename(state.settings, state.captureTabUrl, {
+			advanceIncrement: true,
+		});
+		state.filename = filename;
+		const file = await UploadScreenshot({
+			token: state.token,
+			folderId: state.currentFolder.id,
+			dataUrl: state.dataUrl,
+			filename,
+		});
+		state.uploadedFile = file;
+		const wrap = document.createElement('div');
+		const checkSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		checkSvg.setAttribute('aria-hidden', 'true');
+		checkSvg.classList.add('banner-icon');
+		const useEl = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+		useEl.setAttribute('href', '#i-check');
+		checkSvg.append(useEl);
+		const text = document.createElement('span');
+		text.textContent = `${t('banner_uploaded', { name: file.name })} `;
+		const link = document.createElement('a');
+		link.href = '#';
+		link.textContent = t('open_in_drive');
+		link.addEventListener('click', (e) => {
+			e.preventDefault();
+			if (file.webViewLink) chrome.tabs.create({ url: file.webViewLink });
+		});
+		wrap.append(checkSvg, text, link);
+		setBanner('ok', wrap);
+	} catch (err) {
+		console.error(err);
+		setBanner('error', t('err_upload', { error: err.message }));
+	} finally {
+		setBusy(els.uploadBtn, false);
+	}
+}
+
+async function tryAuth({ interactive }) {
+	try {
+		const token = await getAuthToken({ interactive });
+		state.token = token;
+		setAuthState('connected', 'auth_connected');
+		els.uploadBtn.disabled = !state.dataUrl;
+		return token;
+	} catch (err) {
+		state.token = null;
+		if (interactive) {
+			setAuthState('disconnected', 'auth_sign_in_failed');
+		} else {
+			setAuthState('disconnected', 'auth_sign_in');
+		}
+		els.uploadBtn.disabled = true;
+		if (interactive) {
+			setBanner('error', t('err_sign_in', { error: err.message }));
+		}
+		return null;
+	}
+}
+
+function showOptionsError() {
+	const url = chrome.runtime.getURL('options.html') + '?origin=popup.html';
+	els.optionsUrl.href = url;
+	els.optionsUrl.addEventListener('click', (e) => {
+		e.preventDefault();
+		chrome.runtime.openOptionsPage();
+	});
+	show(els.optionsError);
+	els.captureBtn.disabled = true;
+	els.browseBtn.disabled = true;
+}
+
+async function init() {
+	const items = await new Promise((resolve) => chrome.storage.sync.get(DEFAULTS, resolve));
+	state.settings = items;
+
+	if (!isExtensionConfigured(items)) {
+		showOptionsError();
+		return;
+	}
+
+	state.rootFolder = {
+		id: items.folder_id,
+		name: items.folder_name || t('drive_folder_default'),
+	};
+	state.currentFolder = state.rootFolder;
+	state.breadcrumb = [state.rootFolder];
+	renderBreadcrumb();
+
+	await tryAuth({ interactive: false });
+
+	await applyPendingUploadTarget();
+
+	if (items.auto_screenshot) {
+		await takeScreenshot();
+	}
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+	els.captureBtn = qs('#capture-btn');
+	els.uploadBtn = qs('#upload-btn');
+	els.authorizeBtn = qs('#authorize-btn');
+	els.browseBtn = qs('#browse-folders-btn');
+	els.pickFolderBtn = qs('#pick-folder-btn');
+	els.newFolderBtn = qs('#new-folder-btn');
+	els.foldersList = qs('#folders-list');
+	els.breadcrumb = qs('#folder-breadcrumb');
+	els.preview = qs('#screenshot-preview');
+	els.previewSection = qs('#preview-section');
+	els.statusBanner = qs('#status-banner');
+	els.authPill = qs('#auth-pill');
+	els.authText = qs('#auth-text');
+	els.optionsError = qs('#options-error');
+	els.optionsUrl = qs('#options-url');
+	els.openOptions = qs('#open-options');
+
+	await initTheme();
+	watchTheme();
+	await initI18n();
+
+	on(els.captureBtn, 'click', takeScreenshot);
+	on(els.uploadBtn, 'click', uploadScreenshot);
+	on(els.authorizeBtn, 'click', () => tryAuth({ interactive: true }));
+	on(els.browseBtn, 'click', () => {
+		if (!state.token) return;
+		toggle(els.foldersList, els.foldersList.classList.contains('hidden'));
+		if (!els.foldersList.classList.contains('hidden')) {
+			loadFolderListing(state.currentFolder);
+		}
+	});
+	on(els.newFolderBtn, 'click', handleNewSubfolder);
+	on(els.pickFolderBtn, 'click', handlePickFolder);
+	on(els.preview, 'click', () => els.previewSection.classList.toggle('zoomed'));
+	on(els.openOptions, 'click', (e) => {
+		e.preventDefault();
+		chrome.runtime.openOptionsPage();
+	});
+
+	await init();
 });
-
-export { getAuthToken, getIdFromUrl, GetSubFolderListPromise };
