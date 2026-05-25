@@ -1,176 +1,125 @@
-const CONSTANTS = {
-	APIS: {
-		FILES: 'https://www.googleapis.com/drive/v3/files',
-		MULTIPART_UPLOAD: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-	},
-};
+import { captureTab, captureVisibleTab } from './capture.js';
 
-function getIdFromUrl(url) {
-	return url.match(/[-\w]{25,}/)[0];
-}
+const DRIVE_API = 'https://www.googleapis.com/drive/v3/files';
+const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
 
-function getAuthToken(options) {
-	chrome.identity.getAuthToken({ interactive: options.interactive }, options.callback);
-}
-
-function GetSubFolderListPromise(folder_url, token, folderId = null) {
-	folderId = folderId || getIdFromUrl(folder_url);
-
-	const data = {
-		corpora: 'user',
-		q: `mimeType = 'application/vnd.google-apps.folder' and '${folderId}' in parents`,
-		supportsTeamDrives: true,
-	};
-
-	const params = Object.keys(data)
-		.map((k) => `${k}=${encodeURIComponent(data[k])}`)
-		.join('&');
-
+function getAuthToken({ interactive = false } = {}) {
 	return new Promise((resolve, reject) => {
-		let request = new Request(`${CONSTANTS.APIS.FILES}?${params}`, {
-			method: 'GET',
-			headers: {
-				Accept: 'application/json',
-				Authorization: `Bearer ${token}`,
-				'X-Requested-With': 'XMLHttpRequest',
-			},
-			credentials: 'same-origin',
+		chrome.identity.getAuthToken({ interactive }, (token) => {
+			if (chrome.runtime.lastError || !token) {
+				reject(new Error(chrome.runtime.lastError?.message || 'No auth token'));
+				return;
+			}
+			resolve(token);
 		});
-		fetch(request)
-			.then((response) => {
-				return response.json();
-			})
-			.then((data) => {
-				resolve(data.files);
-			})
-			.catch((error) => {
-				reject(error);
-			});
 	});
+}
+
+function removeCachedAuthToken(token) {
+	return new Promise((resolve) => {
+		if (!token) return resolve();
+		chrome.identity.removeCachedAuthToken({ token }, () => resolve());
+	});
+}
+
+async function driveFetch(url, { method = 'GET', token, body, headers = {} } = {}) {
+	const response = await fetch(url, {
+		method,
+		headers: {
+			Authorization: `Bearer ${token}`,
+			Accept: 'application/json',
+			...headers,
+		},
+		body,
+	});
+	const text = await response.text();
+	const data = text ? JSON.parse(text) : {};
+	if (!response.ok) {
+		const message = data?.error?.message || `${response.status} ${response.statusText}`;
+		const err = new Error(message);
+		err.status = response.status;
+		err.body = data;
+		throw err;
+	}
+	return data;
+}
+
+async function GetSubFolderList(token, parentId) {
+	const params = new URLSearchParams({
+		q: `mimeType = 'application/vnd.google-apps.folder' and '${parentId}' in parents and trashed = false`,
+		fields: 'files(id,name)',
+		pageSize: '100',
+		orderBy: 'name',
+	});
+	const data = await driveFetch(`${DRIVE_API}?${params}`, { token });
+	return data.files || [];
+}
+
+async function CreateFolder(token, name, parentId) {
+	const body = JSON.stringify({
+		name,
+		mimeType: 'application/vnd.google-apps.folder',
+		parents: parentId ? [parentId] : undefined,
+	});
+	return driveFetch(DRIVE_API, {
+		method: 'POST',
+		token,
+		body,
+		headers: { 'Content-Type': 'application/json' },
+	});
+}
+
+async function GetFile(token, fileId, fields = 'id,name,webViewLink,parents') {
+	const params = new URLSearchParams({ fields });
+	return driveFetch(`${DRIVE_API}/${fileId}?${params}`, { token });
 }
 
 function GetCurrentWindow() {
-	return new Promise((resolve, reject) => {
-		chrome.windows.getCurrent({}, resolve);
-	});
+	return new Promise((resolve) => chrome.windows.getCurrent({}, resolve));
 }
 
 function CaptureScreenshot(windowId = null) {
-	return new Promise((resolve, reject) => {
-		chrome.tabs.captureVisibleTab(windowId, { format: 'png' }, (dataUrl) => {
-			resolve(dataUrl);
-		});
-	});
+	return captureVisibleTab(windowId);
 }
 
-function UploadScreenshot(options) {
-	const { folderId, token, dataUrl, filename } = options;
-
-	const base64Data = dataUrl.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
-
+async function UploadScreenshot({ token, folderId, dataUrl, filename }) {
+	const base64Data = dataUrl.replace(/^data:image\/(png|jpe?g);base64,/, '');
 	const metadata = {
 		name: filename,
 		mimeType: 'image/png',
-		parents: [folderId],
+		parents: folderId ? [folderId] : undefined,
 	};
-
 	const boundary = '-------314159265358979323846';
-	const delimiter = '\r\n--' + boundary + '\r\n';
-	const close_delimiter = '\r\n--' + boundary + '--';
-	const contentType = metadata.mimeType || 'application/octet-stream';
-	const multipartRequestBody =
+	const delimiter = `\r\n--${boundary}\r\n`;
+	const closeDelimiter = `\r\n--${boundary}--`;
+
+	const body =
 		delimiter +
 		'Content-Type: application/json\r\n\r\n' +
 		JSON.stringify(metadata) +
 		delimiter +
-		'Content-Type: ' +
-		contentType +
-		'\r\n' +
-		'Content-Transfer-Encoding: base64\r\n' +
-		'\r\n' +
+		'Content-Type: image/png\r\n' +
+		'Content-Transfer-Encoding: base64\r\n\r\n' +
 		base64Data +
-		close_delimiter;
+		closeDelimiter;
 
-	return new Promise((resolve, reject) => {
-		let request = new Request(CONSTANTS.APIS.MULTIPART_UPLOAD, {
-			method: 'POST',
-			headers: {
-				Authorization: 'Bearer ' + token,
-				'Content-Type': `multipart/related; boundary=${boundary}`,
-			},
-			body: multipartRequestBody,
-		});
-
-		fetch(request)
-			.then((response) => {
-				return response.json();
-			})
-			.then((result) => {
-				if (result.error) {
-					reject(result.error);
-				} else {
-					resolve(result);
-				}
-			});
-	});
-}
-
-function CreateFolder(folderName, token, folderId) {
-	var data = {
-		name: folderName,
-		title: folderName,
-		mimeType: 'application/vnd.google-apps.folder',
-		parents: [folderId],
-	};
-
-	return new Promise((resolve, reject) => {
-		let request = new Request(CONSTANTS.APIS.FILES, {
-			method: 'POST',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`,
-			},
-			credentials: 'same-origin',
-			body: JSON.stringify(data),
-		});
-
-		fetch(request)
-			.then((response) => {
-				return response.json();
-			})
-			.then((result) => {
-				if (result.error) {
-					reject(result.error);
-				} else {
-					resolve(result);
-				}
-			});
-	});
-}
-
-function GetFileUrls(fileId, token) {
-	return new Promise((resolve, reject) => {
-		$.ajax({
-			url: `${CONSTANTS.APIS.FILES}/${fileId}?fields=webViewLink`,
-			method: 'GET',
-			crossDomain: true,
-			headers: {
-				Authorization: 'Bearer ' + token,
-			},
-		})
-			.done(resolve)
-			.fail(reject);
+	return driveFetch(`${DRIVE_UPLOAD}&fields=id,name,webViewLink`, {
+		method: 'POST',
+		token,
+		body,
+		headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
 	});
 }
 
 export {
-	getIdFromUrl,
 	getAuthToken,
-	GetSubFolderListPromise,
+	removeCachedAuthToken,
+	GetSubFolderList,
 	CreateFolder,
+	GetFile,
 	GetCurrentWindow,
+	captureTab,
+	captureVisibleTab,
 	CaptureScreenshot,
 	UploadScreenshot,
-	GetFileUrls,
 };

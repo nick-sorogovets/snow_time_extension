@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      force_version:
+        description: "Publish current manifest version (skip version-bump guard)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  detect-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.diff.outputs.should_publish }}
+      version: ${{ steps.diff.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - id: diff
+        env:
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_version && 'true' || 'false' }}
+        run: |
+          CURR=$(jq -r .version src/manifest.json)
+          PREV=$(git show HEAD~1:src/manifest.json 2>/dev/null | jq -r .version || echo "")
+
+          if [ "$FORCE" = "true" ] && [ -n "$CURR" ]; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            echo "version=$CURR" >> "$GITHUB_OUTPUT"
+            echo "Forced publish for version $CURR"
+          elif [ "$CURR" != "$PREV" ] && [ -n "$CURR" ]; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            echo "version=$CURR" >> "$GITHUB_OUTPUT"
+            echo "Version bumped: $PREV -> $CURR"
+          else
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "No version bump ($PREV -> $CURR); skipping publish"
+          fi
+
+  publish:
+    needs: detect-version
+    if: needs.detect-version.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    environment: chrome-web-store
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify package.json/manifest version match
+        run: |
+          MV=$(jq -r .version src/manifest.json)
+          PV=$(jq -r .version package.json)
+          if [ "$MV" != "$PV" ]; then
+            echo "::error::manifest version ($MV) != package.json version ($PV)"
+            exit 1
+          fi
+
+      - name: Build prod zip
+        env:
+          PROD_OAUTH_CLIENT_ID: ${{ secrets.PROD_OAUTH_CLIENT_ID }}
+        run: npm run build
+
+      - name: Locate zip
+        id: zip
+        run: echo "path=$(ls dist/*.zip | head -n1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload + publish to Chrome Web Store
+        env:
+          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: npx chrome-webstore-upload-cli@3 --source "${{ steps.zip.outputs.path }}"
+
+      - name: Tag and release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="v${{ needs.detect-version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$V"
+          git push origin "$V"
+          gh release create "$V" --generate-notes "${{ steps.zip.outputs.path }}"

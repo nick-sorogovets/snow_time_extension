@@ -1,12 +1,17 @@
 {
   "name": "snow-screenshot-extension",
-  "version": "0.0.8",
-  "description": "Take screenshot from SNOW page to simplify developers life",
-  "main": "popup.js",
+  "version": "0.1.0",
+  "description": "Take screenshot from SNOW page and upload to Google Drive.",
+  "main": "src/js/popup.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
-    "build": "node ./gulpfile.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "preinstall": "npx npm-force-resolutions"
+    "i18n": "node scripts/build-i18n.js",
+    "clean": "rimraf build dist",
+    "build": "npm run i18n && npm run clean && webpack --mode production && node scripts/zip-dist.js",
+    "build:dev": "npm run i18n && rimraf build && webpack --mode development",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -15,7 +20,8 @@
   "keywords": [
     "snow",
     "screenshot",
-    "google-drive"
+    "google-drive",
+    "chrome-extension"
   ],
   "author": "Nick Sorogovets",
   "license": "MIT",
@@ -23,22 +29,15 @@
     "url": "https://github.com/nick-sorogovets/snow_time_extension/issues"
   },
   "homepage": "https://github.com/nick-sorogovets/snow_time_extension#readme",
-  "dependencies": {
-    "jquery": "^3.6.0"
-  },
-  "resolutions": {
-    "graceful-fs": "^4.2.4"
-  },
   "devDependencies": {
-    "gulp": "^3.9.1",
-    "gulp-clean": "^0.4.0",
-    "gulp-cleanhtml": "^1.0.3",
-    "gulp-clean-css": "^4.3.0",
-    "gulp-jshint": "^2.1.0",
-    "gulp-json-modify": "^1.0.2",
-    "gulp-strip-debug": "^3.0.0",
-    "gulp-uglify": "^3.0.2",
-    "gulp-zip": "^3.2.0",
-    "jshint": "^2.13.6"
+    "archiver": "^7.0.1",
+    "clean-css": "^5.3.3",
+    "copy-webpack-plugin": "^14.0.0",
+    "dotenv": "^16.5.0",
+    "html-minifier-terser": "^7.2.0",
+    "rimraf": "^6.0.1",
+    "terser-webpack-plugin": "^5.3.14",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1"
   }
 }

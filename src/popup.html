@@ -1,69 +1,195 @@
 <!DOCTYPE html>
-<!--
- This page is shown when the extension button is clicked, because the
- "browser_action" field in manifest.json contains the "default_popup" key with
- value "popup.html".
- -->
-<html lang="en-US" dir="ltr" data-platform="chromium" data-application="chrome">
+<html lang="en">
 	<head>
+		<meta charset="UTF-8" />
 		<title>SNOW Screenshot</title>
-		<link rel="stylesheet" type="text/css" href="./styles/popup.css" />
-		<script src="jquery.min.js"></script>
-		<script type="module" src="./js/api.js"></script>
+		<link rel="stylesheet" href="./styles/popup.css" />
 		<script type="module" src="./js/popup.js"></script>
 	</head>
-
 	<body>
-		<header>
-			<h1>Snow screenshot extension</h1>
-			<div id="ajax-spinner">
-				<svg class="spinner" viewBox="0 0 50 50">
-					<circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
-				</svg>
+		<svg class="sprite" aria-hidden="true" focusable="false">
+			<defs>
+				<symbol id="i-camera" viewBox="0 0 24 24">
+					<path
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.7"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"
+					/>
+					<circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.7" />
+				</symbol>
+				<symbol id="i-upload" viewBox="0 0 24 24">
+					<path
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.7"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M12 4v12M7 9l5-5 5 5M5 20h14"
+					/>
+				</symbol>
+				<symbol id="i-folder" viewBox="0 0 24 24">
+					<path
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.7"
+						stroke-linejoin="round"
+						d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"
+					/>
+				</symbol>
+				<symbol id="i-external" viewBox="0 0 24 24">
+					<path
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.7"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M14 4h6v6M20 4l-9 9M9 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"
+					/>
+				</symbol>
+				<symbol id="i-check" viewBox="0 0 24 24">
+					<path
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M5 12l5 5 9-11"
+					/>
+				</symbol>
+				<symbol id="i-warning" viewBox="0 0 24 24">
+					<path
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.7"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M12 4l10 16H2L12 4Z M12 10v5 M12 18v.01"
+					/>
+				</symbol>
+				<symbol id="i-cog" viewBox="0 0 24 24">
+					<path
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.7"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-2-1-.5-1.5 1-2-1.5-1.5-2 1L14.5 6 13.5 4h-3L9.5 6 8 6.5l-2-1L4.5 7l1 2L5 10.5l-2 1v3l2 1 .5 1.5-1 2 1.5 1.5 2-1 1.5.5 1 2h3l1-2 1.5-.5 2 1L21 17.5l-1-2 .5-1.5 2-1Z"
+					/>
+				</symbol>
+			</defs>
+		</svg>
+
+		<header class="app-header">
+			<div class="brand">
+				<img
+					class="brand-logo"
+					src="./img/logo.svg"
+					width="24"
+					height="24"
+					alt=""
+					aria-hidden="true"
+				/>
+				<span class="brand-name" data-i18n="app_name">Snow Screenshot</span>
+			</div>
+			<div class="auth-pill" id="auth-pill" data-state="unknown">
+				<span class="auth-dot" aria-hidden="true"></span>
+				<span id="auth-text" data-i18n="auth_checking">…</span>
 			</div>
 		</header>
 
-		<div id="options_error" class="error hidden">
-			Configure setting before use <a id="options_url" href="#">options</a>
-		</div>
 		<main>
-			<div>
-				<!--Add buttons to initiate auth sequence and sign out-->
-				<button id="authorize_button" class="btn hidden">Authorize</button>
-				<button id="get_subfolders_button" class="btn icon get_folders">Specify folder</button>
-				<button id="take-screenshot-button" class="btn icon screenshot">Capture</button>
-			</div>
-
-			<fieldset class="round-borders">
-				<legend>Folder to upload:</legend>
-				<div id="currentFolder">
-					<strong>Root</strong>
+			<section id="options-error" class="banner banner-warn hidden">
+				<svg class="banner-icon" aria-hidden="true"><use href="#i-warning" /></svg>
+				<div>
+					<span data-i18n="configure_first">Configure the extension first.</span>
+					<a id="options-url" href="#" data-i18n="open_settings">Open settings →</a>
 				</div>
-				<ul id="folders_list"></ul>
-			</fieldset>
+			</section>
 
-			<div>Screenshot Preview:</div>
-
-			<div id="screenshot" class="hidden">
-				<img id="screenshot-preview" src="" class="screenshot-preview" title="click to zoom" />
-
-				<div class="inputArea">
-					<button id="upload_screenshot_button" class="btn icon upload">Upload</button>
+			<section class="card folder-card">
+				<header class="card-header">
+					<svg class="ico" aria-hidden="true"><use href="#i-folder" /></svg>
+					<span data-i18n="upload_to">Upload to</span>
+					<button
+						type="button"
+						id="pick-folder-btn"
+						class="text-btn"
+						data-i18n="pick"
+						data-i18n-title="pick_title"
+						title="Pick a Drive folder via Google Picker"
+					>
+						Pick
+					</button>
+					<button
+						type="button"
+						id="new-folder-btn"
+						class="text-btn"
+						data-i18n="new_folder"
+						data-i18n-title="new_folder_title"
+						title="Create a new sub-folder here"
+					>
+						+ New
+					</button>
+					<button
+						type="button"
+						id="browse-folders-btn"
+						class="text-btn"
+						data-i18n="browse"
+						data-i18n-title="browse_title"
+						title="Browse subfolders"
+					>
+						Browse
+					</button>
+				</header>
+				<div id="folder-breadcrumb" class="breadcrumb" aria-live="polite">
+					<span class="muted" data-i18n="no_folder_selected">No folder selected</span>
 				</div>
-			</div>
-			<div id="msg-success" class="hidden">
-				<p class="success">Successfully uploaded</p>
-				<a id="view_link" href="#" class="view-link"></a>
-			</div>
-			<div id="msg-error" class="hidden">
-				<p class="error">Something went wrong. Try again later.</p>
-			</div>
+				<ul id="folders-list" class="folder-list hidden" role="listbox"></ul>
+			</section>
+
+			<section class="actions">
+				<button id="capture-btn" class="btn btn-primary" type="button">
+					<span class="btn-leading" aria-hidden="true">
+						<svg class="btn-icon"><use href="#i-camera" /></svg>
+						<span class="btn-spinner"></span>
+					</span>
+					<span class="btn-label" data-i18n="capture">Capture</span>
+				</button>
+				<button id="upload-btn" class="btn btn-secondary" type="button" disabled>
+					<svg aria-hidden="true"><use href="#i-upload" /></svg>
+					<span data-i18n="upload">Upload</span>
+				</button>
+				<button
+					id="authorize-btn"
+					class="btn btn-secondary hidden"
+					type="button"
+					data-i18n-title="sign_in_title"
+					title="Sign in to Google Drive"
+				>
+					<span data-i18n="sign_in">Sign in to Drive</span>
+				</button>
+			</section>
+
+			<section id="preview-section" class="preview hidden">
+				<img
+					id="screenshot-preview"
+					data-i18n-alt="screenshot_preview_alt"
+					alt="Screenshot preview"
+				/>
+			</section>
+
+			<section id="status-banner" class="banner hidden" aria-live="polite"></section>
 		</main>
-		<footer>
-			<small>
-				Made by <a href="mailto:sorogovets.nikolay@gmail.com"> Nick Sorogovets</a> &copy;
-				2022
-			</small>
+
+		<footer class="app-footer">
+			<a id="open-options" href="#" data-i18n-title="settings" title="Settings">
+				<svg aria-hidden="true"><use href="#i-cog" /></svg>
+				<span data-i18n="settings">Settings</span>
+			</a>
+			<small>v0.1.0</small>
 		</footer>
 	</body>
 </html>

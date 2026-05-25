@@ -1,190 +1,218 @@
 import {
 	getAuthToken,
-	getIdFromUrl,
-	GetSubFolderListPromise,
-	CaptureScreenshot,
+	GetSubFolderList,
+	CreateFolder,
+	captureTab,
 	UploadScreenshot,
 	GetCurrentWindow,
-	CreateFolder,
 } from './api.js';
+import { initI18n, t } from './i18n.js';
+import { buildScreenshotFilename, isExtensionConfigured } from './filename.js';
 
-import { init } from './content.js';
-
-let settings = {};
-let data = {
-	isUploadStarted: false,
-	isInitStarted: false,
-};
-
-const DEFAULT_SETTINGS = {
-	folder_url: '',
+const DEFAULTS = {
+	folder_id: '',
+	folder_name: '',
 	username: '',
+	filename_use_domain: false,
+	filename_postfix: 'short_date',
 	auto_screenshot: false,
 	auto_upload: false,
+	language: 'en',
+	screenshot_mode: 'visible',
+	max_page_height: 15000,
 };
 
-function getAuthTokenSilentCallback(token) {
-	// Catch chrome error if user is not authorized.
-	if (chrome.runtime.lastError) {
-		console.error(chrome.runtime.lastError.message);
-	} else {
-		data = {
-			...data,
-			token,
-		};
-		console.log('Authentication success ', token);
+const PICKER_ORIGIN = 'https://nick-sorogovets.github.io/snow_time_extension/';
+
+const cache = {
+	uploadInFlight: false,
+	weekFolderByName: new Map(),
+};
+
+function getSettings() {
+	return new Promise((resolve) => chrome.storage.sync.get(DEFAULTS, resolve));
+}
+
+async function ensureI18n() {
+	await initI18n();
+}
+
+function notify(id, titleKey, message) {
+	chrome.notifications.create(id, {
+		type: 'basic',
+		iconUrl: chrome.runtime.getURL('img/icon_48.png'),
+		title: t(titleKey),
+		message,
+	});
+}
+
+async function ensureWeekFolder(token, rootId, weekName) {
+	const cached = cache.weekFolderByName.get(`${rootId}:${weekName}`);
+	if (cached) return cached;
+
+	const subfolders = await GetSubFolderList(token, rootId);
+	let folder = subfolders.find((f) => f.name === weekName);
+	if (!folder) {
+		folder = await CreateFolder(token, weekName, rootId);
+	}
+	cache.weekFolderByName.set(`${rootId}:${weekName}`, folder);
+	return folder;
+}
+
+async function handleInit({ week_name }) {
+	const settings = await getSettings();
+	if (!settings.folder_id || !settings.auto_upload) return null;
+
+	const token = await getAuthToken({ interactive: false }).catch(() => null);
+	if (!token) return null;
+
+	try {
+		return await ensureWeekFolder(token, settings.folder_id, week_name);
+	} catch (err) {
+		console.error('ensureWeekFolder failed', err);
+		await ensureI18n();
+		notify('snow-week-failed', 'app_name', t('err_week_folder', { name: week_name }));
+		return null;
 	}
 }
 
-function subscribeOnSubmitClick(tabId) {
-	getAuthToken({
-		interactive: false,
-		callback: getAuthTokenSilentCallback,
-	});
+async function handleSubmitPressed({ week_name }) {
+	if (cache.uploadInFlight) return null;
+	cache.uploadInFlight = true;
+	try {
+		const settings = await getSettings();
+		if (!isExtensionConfigured(settings)) return null;
 
-	chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-		console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
+		await ensureI18n();
 
-		console.log(request);
-
-		switch (request.action) {
-			case 'init':
-				if (!data.isInitStarted) {
-					data.isInitStarted = true;
-					const { week_name } = request;
-					if (week_name != data.week_name || !data.selectedFolder) {
-						//Clear cached data
-						data.selectedFolder = null;
-						data.week_name = null;
-
-						console.log(request.week_name);
-						const { folder_url } = settings;
-						const folderId = getIdFromUrl(folder_url);
-						GetSubFolderListPromise(folder_url, data.token, folderId)
-							.then((folders) => {
-								if (folders.some((f) => f.name === week_name)) {
-									const weekFolder = folders.find((folder, index) => {
-										return folder.name == week_name;
-									});
-
-									data = {
-										...data,
-										week_name,
-										selectedFolder: weekFolder,
-									};
-
-									console.log(weekFolder);
-									sendResponse(weekFolder);
-								} else {
-									CreateFolder(week_name, data.token, folderId)
-										.then((createdFolder) => {
-											data = {
-												...data,
-												week_name,
-												selectedFolder: createdFolder,
-											};
-											console.log(`Folder created automatically: "${week_name}" `);
-											sendResponse(createdFolder);
-										})
-										.catch((jqHXR, textStatus) => {
-											console.error(JSON.stringify(jqHXR ?? 'Unexpected error'));
-											sendResponse({ name: undefined });
-											alert(`Failed to create folder as week name: "${week_name}" `);
-										});
-								}
-							})
-							.catch((jqHXR, textStatus) => {
-								console.error(`Request failed: ${JSON.stringify(jqHXR)}, ${textStatus}`);
-							})
-							.then(() => {
-								data.isInitStarted = false;
-							});
-					} else if (week_name === data.week_name && data.selectedFolder) {
-						sendResponse(data.selectedFolder);
-						data.isInitStarted = false;
-					}
-				}
-				break;
-			case 'submit_pressed':
-				const today = new Date();
-				const now = today.toISOString().substring(0, 10);
-				const filename = `${settings.username}_${now}.png`;
-				const { selectedFolder, isUploadStarted } = data;
-
-				if (!isUploadStarted) {
-					data.isUploadStarted = true;
-
-					GetCurrentWindow()
-						.then((currentWindow) => {
-							return CaptureScreenshot(currentWindow.id);
-						})
-						.then((dataUrl) => {
-							const options = {
-								folderId: selectedFolder.id,
-								token: data.token,
-								dataUrl,
-								filename,
-							};
-							return UploadScreenshot(options);
-						})
-						.then((response) => {
-							console.log(response);
-
-							data = {
-								...data,
-								uploadedFile: response,
-							};
-
-							sendResponse(response);
-						})
-						.catch((jqHXR, textStatus) => {
-							alert('Request failed: ' + textStatus);
-						})
-						.then(() => {
-							data = {
-								...data,
-								isUploadStarted: false,
-								selectedFolder: null,
-								week_name: '',
-							};
-						});
-				}
-				break;
-			default:
-				break;
+		const token = await getAuthToken({ interactive: false }).catch(() => null);
+		if (!token) {
+			notify('snow-auth-needed', 'app_name', t('err_auth_needed'));
+			return null;
 		}
-		return true;
-	});
 
-	chrome.scripting.executeScript({
-		target: { tabId: tabId },
-		func: init,
-		args: [tabId],
-	});
+		const target = week_name
+			? await ensureWeekFolder(token, settings.folder_id, week_name)
+			: { id: settings.folder_id };
+
+		const win = await GetCurrentWindow();
+		const [tab] = await chrome.tabs.query({ active: true, windowId: win.id });
+		const dataUrl = await captureTab({
+			tabId: tab?.id,
+			windowId: tab?.windowId ?? win.id,
+			mode: settings.screenshot_mode || 'visible',
+			maxHeight: settings.max_page_height || DEFAULTS.max_page_height,
+		});
+		const filename = await buildScreenshotFilename(settings, tab?.url, {
+			advanceIncrement: true,
+		});
+
+		const file = await UploadScreenshot({
+			token,
+			folderId: target.id,
+			dataUrl,
+			filename,
+		});
+		notify('snow-upload-ok', 'app_name', t('notify_uploaded', { name: file.name }));
+		return file;
+	} catch (err) {
+		console.error('submit upload failed', err);
+		await ensureI18n();
+		notify('snow-upload-failed', 'app_name', t('err_upload', { error: err.message }));
+		return null;
+	} finally {
+		cache.uploadInFlight = false;
+	}
 }
 
-function loadSettings(tabId) {
-	chrome.storage.sync.get(
-		{
-			folder_url: DEFAULT_SETTINGS.folder_url,
-			username: DEFAULT_SETTINGS.username,
-			auto_screenshot: DEFAULT_SETTINGS.auto_screenshot,
-			auto_upload: DEFAULT_SETTINGS.auto_upload,
-		},
-		function (items) {
-			const { auto_upload } = items;
-			settings = items;
-
-			if (auto_upload) {
-				subscribeOnSubmitClick(tabId);
-			}
-		}
-	);
+function isAllowedPickerSender(sender) {
+	return Boolean(sender.url && sender.url.startsWith(PICKER_ORIGIN));
 }
 
-chrome.webNavigation.onCompleted.addListener(
-	function (details) {
-		loadSettings(details.tabId);
-	},
-	{ url: [{ urlMatches: 'https://coxauto.service-now.com/time' }] }
-);
+async function handlePickerResult({ intent, folder }) {
+	if (!folder || !folder.id) return;
+
+	await ensureI18n();
+
+	if (intent === 'set-root') {
+		await chrome.storage.sync.set({
+			folder_id: folder.id,
+			folder_name: folder.name,
+		});
+	} else if (intent === 'set-upload-target') {
+		await chrome.storage.session.set({
+			pending_upload_target: { id: folder.id, name: folder.name, ts: Date.now() },
+		});
+	}
+	notify('snow-picker-ok', 'app_name', t('notify_picker_selected', { name: folder.name }));
+}
+
+chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+	if (!isAllowedPickerSender(sender)) {
+		sendResponse({ error: 'forbidden' });
+		return false;
+	}
+	if (!message || typeof message.type !== 'string') {
+		sendResponse({ error: 'invalid message' });
+		return false;
+	}
+
+	switch (message.type) {
+		case 'request-token':
+			getAuthToken({ interactive: true })
+				.then((token) => sendResponse({ token }))
+				.catch((err) => sendResponse({ error: err.message }));
+			return true;
+		case 'picker-result':
+			handlePickerResult(message)
+				.then(() => sendResponse({ ok: true }))
+				.catch((err) => sendResponse({ error: err.message }));
+			return true;
+		case 'picker-cancel':
+			sendResponse({ ok: true });
+			return false;
+		default:
+			sendResponse({ error: 'unknown type' });
+			return false;
+	}
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+	if (!message || typeof message.action !== 'string') return false;
+
+	switch (message.action) {
+		case 'init':
+			handleInit(message).then(sendResponse);
+			return true;
+		case 'submit_pressed':
+			handleSubmitPressed(message).then(sendResponse);
+			return true;
+		case 'get_submit_label':
+			ensureI18n()
+				.then(() => sendResponse({ label: t('submit_upload') }))
+				.catch(() => sendResponse({ label: 'Submit & Upload' }));
+			return true;
+		default:
+			return false;
+	}
+});
+
+chrome.notifications.onClicked.addListener(async (id) => {
+	if (id === 'snow-auth-needed') {
+		await getAuthToken({ interactive: true }).catch(() => {});
+	}
+	chrome.notifications.clear(id);
+});
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+	if (details.reason !== 'update') return;
+	const items = await new Promise((resolve) => chrome.storage.sync.get(null, resolve));
+	if (items.folder_url && !items.folder_id) {
+		chrome.storage.sync.remove('folder_url');
+		await ensureI18n();
+		notify('snow-rescope', 'app_name', t('notify_rescope'));
+		chrome.runtime.openOptionsPage();
+	}
+});
+
+ensureI18n();
