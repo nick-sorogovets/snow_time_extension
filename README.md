@@ -41,7 +41,7 @@ Chrome extension for **ServiceNow Time Entry** (`coxauto.service-now.com/time`):
 
 ## Installation (development)
 
-1. Clone the repo and install dependencies (Node **22 LTS**, see `.nvmrc`):
+1. Clone the repo and install dependencies (Node **24 LTS**, see `.nvmrc`):
 
    ```bash
    nvm use
@@ -104,7 +104,7 @@ On `https://coxauto.service-now.com/time*`, with **Auto-upload on SNOW Submit cl
 npm run build
 ```
 
-Runs i18n generation, **Webpack** production build into `build/`, and creates `dist/SNOW screenshot extension v0.1.0.zip` (production OAuth client id in manifest). Requires **Node 22 LTS** (`.nvmrc`). See [Deploy.md](Deploy.md) §3.2.
+Runs i18n generation, **Webpack** production build into `build/`, and creates `dist/SNOW screenshot extension v0.1.0.zip` (production OAuth client id in manifest). Requires **Node 24 LTS** (`.nvmrc`). See [Deploy.md](Deploy.md) §3.2.
 
 ---
 
