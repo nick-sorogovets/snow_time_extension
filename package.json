@@ -1,6 +1,6 @@
 {
   "name": "snow-screenshot-extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Take screenshot from SNOW page and upload to Google Drive.",
   "main": "src/js/popup.js",
   "engines": {

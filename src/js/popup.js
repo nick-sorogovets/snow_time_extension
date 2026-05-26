@@ -4,6 +4,7 @@ import {
 	CreateFolder,
 	captureTab,
 	UploadScreenshot,
+	finalizeUploadedFile,
 } from './api.js';
 import { qs, show, hide, toggle, setBusy, on } from './ui.js';
 import { initI18n, t } from './i18n.js';
@@ -21,6 +22,7 @@ const DEFAULTS = {
 	filename_postfix: 'short_date',
 	auto_screenshot: false,
 	auto_upload: false,
+	copy_link_after_upload: false,
 	language: 'en',
 	theme: 'system',
 	screenshot_mode: 'visible',
@@ -269,12 +271,33 @@ async function uploadScreenshot() {
 			advanceIncrement: true,
 		});
 		state.filename = filename;
-		const file = await UploadScreenshot({
+		let file = await UploadScreenshot({
 			token: state.token,
 			folderId: state.currentFolder.id,
 			dataUrl: state.dataUrl,
 			filename,
 		});
+		let shareLink = null;
+		if (state.settings.copy_link_after_upload) {
+			try {
+				({ file, shareLink } = await finalizeUploadedFile({
+					token: state.token,
+					file,
+					shareLink: true,
+				}));
+				if (shareLink) {
+					await navigator.clipboard.writeText(shareLink);
+				}
+			} catch (shareErr) {
+				console.error(shareErr);
+				setBanner(
+					'error',
+					t('err_share_link', { name: file.name, error: shareErr.message })
+				);
+				state.uploadedFile = file;
+				return;
+			}
+		}
 		state.uploadedFile = file;
 		const wrap = document.createElement('div');
 		const checkSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -284,7 +307,9 @@ async function uploadScreenshot() {
 		useEl.setAttribute('href', '#i-check');
 		checkSvg.append(useEl);
 		const text = document.createElement('span');
-		text.textContent = `${t('banner_uploaded', { name: file.name })} `;
+		text.textContent = shareLink
+			? `${t('banner_uploaded_link_copied', { name: file.name })} `
+			: `${t('banner_uploaded', { name: file.name })} `;
 		const link = document.createElement('a');
 		link.href = '#';
 		link.textContent = t('open_in_drive');

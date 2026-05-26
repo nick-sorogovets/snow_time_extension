@@ -13,6 +13,7 @@ const DEFAULTS = {
 	filename_postfix: 'short_date',
 	auto_screenshot: false,
 	auto_upload: false,
+	copy_link_after_upload: false,
 	language: 'en',
 	theme: THEME_DEFAULT,
 	screenshot_mode: 'visible',
@@ -102,6 +103,7 @@ function loadSettings() {
 		els.filenamePostfix.value = items.filename_postfix || DEFAULTS.filename_postfix;
 		els.autoScreenshot.checked = !!items.auto_screenshot;
 		els.autoUpload.checked = !!items.auto_upload;
+		els.copyLinkAfterUpload.checked = !!items.copy_link_after_upload;
 		els.screenshotMode.value = items.screenshot_mode || 'visible';
 		els.maxPageHeight.value = String(items.max_page_height || DEFAULTS.max_page_height);
 		populateLanguageSelect(items.language || 'en');
@@ -211,6 +213,7 @@ async function handleSubmit(event) {
 					filename_postfix,
 					auto_screenshot: els.autoScreenshot.checked,
 					auto_upload: els.autoUpload.checked,
+					copy_link_after_upload: els.copyLinkAfterUpload.checked,
 					language,
 					theme,
 					screenshot_mode,
@@ -257,6 +260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	els.maxPageHeight = qs('#max_page_height');
 	els.autoScreenshot = qs('#auto_screenshot');
 	els.autoUpload = qs('#auto_upload');
+	els.copyLinkAfterUpload = qs('#copy_link_after_upload');
 	els.createFolderBtn = qs('#create-folder-btn');
 	els.pickFolderBtn = qs('#pick-folder-btn');
 	els.saveBtn = qs('#save-btn');
