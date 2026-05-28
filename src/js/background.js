@@ -214,6 +214,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	if (!message || typeof message.action !== 'string') return false;
 
 	switch (message.action) {
+		case 'ping':
+			sendResponse({ ok: true, id: chrome.runtime.id });
+			return false;
 		case 'init':
 			handleInit(message).then(sendResponse);
 			return true;

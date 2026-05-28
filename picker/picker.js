@@ -2,13 +2,32 @@
 	const log = window.__pickerLog || function () {};
 
 	const APP_ID = '384905528545';
-	const DEFAULT_EXT_ID = 'cmhmigmpifnomnelnecfimefophfgldh';
 
 	const params = new URLSearchParams(window.location.search);
 	const intent = params.get('intent') || 'set-root';
-	const extId = params.get('ext') || DEFAULT_EXT_ID;
+	const extParam = params.get('ext');
+	const extId = extParam?.trim() || '';
+
+	if (!extId) {
+		log('Missing ?ext= in URL. Open Pick existing… from extension Settings or popup.', 'err');
+		log(
+			'Do not bookmark this page without ?ext=<your extension ID from chrome://extensions>.',
+			'warn'
+		);
+		return;
+	}
 
 	log('intent=' + intent + ', extId=' + extId);
+
+	function explainConnectionError(message) {
+		if (!message || !message.includes('Receiving end does not exist')) return message;
+		return (
+			'Could not reach the extension (ID ' +
+			extId +
+			'). Install or enable Snow Screenshot, then open Pick existing… from Settings — do not reuse an old picker tab. ' +
+			'Unpacked installs get a different ID unless manifest includes `key`; check chrome://extensions.'
+		);
+	}
 
 	function sendToExtension(message) {
 		return new Promise((resolve, reject) => {
@@ -18,7 +37,7 @@
 			}
 			chrome.runtime.sendMessage(extId, message, (response) => {
 				if (chrome.runtime.lastError) {
-					reject(new Error(chrome.runtime.lastError.message));
+					reject(new Error(explainConnectionError(chrome.runtime.lastError.message)));
 					return;
 				}
 				if (response && response.error) {

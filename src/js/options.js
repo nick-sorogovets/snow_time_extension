@@ -114,6 +114,7 @@ function loadSettings() {
 }
 
 function openPicker(intent) {
+	chrome.runtime.sendMessage({ action: 'ping' }).catch(() => {});
 	chrome.tabs.create({ url: buildPickerUrl(intent) });
 	setStatus(els.status, t('status_picker_opened'), 'info');
 }

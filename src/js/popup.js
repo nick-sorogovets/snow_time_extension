@@ -190,6 +190,7 @@ async function handleNewSubfolder() {
 }
 
 function openPicker(intent) {
+	chrome.runtime.sendMessage({ action: 'ping' }).catch(() => {});
 	chrome.tabs.create({ url: buildPickerUrl(intent) });
 	setBanner('ok', t('banner_picker_opened'));
 }
