@@ -4,11 +4,19 @@
 
 Chrome extension for **ServiceNow Time Entry** (`coxauto.service-now.com/time`): capture the current page (or the full loaded page), preview it, and upload PNG files to a **Google Drive folder** you choose. Optional automation uploads a screenshot when you click **Submit** on the SNOW timesheet.
 
-**Current version:** `0.1.1` (Manifest V3)
+**Current version:** `0.1.2` (Manifest V3)
 
 ---
 
 ## What's new since 0.0.8
+
+### 0.1.2
+
+- **Production build fix:** webpack inlines `_tokens.css` into popup/options stylesheets (fixes unstyled UI in `dist/` zip).
+- **Asset paths:** built HTML uses paths without `./` prefix; `zip-dist.js` validates CSS tokens and HTML references.
+- **Picker:** requires `?ext=` from extension; clearer connection errors; pings background before opening picker tab.
+- **Optional stable Extension ID:** prod build can inject manifest `key` from `.keys/manifest-key.txt` or `MANIFEST_KEY` in `.env`.
+- **Docs:** expanded Deploy.md troubleshooting (CSS, picker, CWS icons).
 
 ### 0.1.1
 
