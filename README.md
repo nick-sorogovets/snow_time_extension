@@ -4,11 +4,15 @@
 
 Chrome extension for **ServiceNow Time Entry** (`coxauto.service-now.com/time`): capture the current page (or the full loaded page), preview it, and upload PNG files to a **Google Drive folder** you choose. Optional automation uploads a screenshot when you click **Submit** on the SNOW timesheet.
 
-**Current version:** `0.1.0` (Manifest V3)
+**Current version:** `0.1.1` (Manifest V3)
 
 ---
 
 ## What's new since 0.0.8
+
+### 0.1.1
+
+- **Copy link after upload** (Settings → Automation): optionally share each uploaded screenshot as “anyone with the link” on Google Drive and copy the link to the clipboard. Includes a settings note about public visibility.
 
 ### 0.0.8 (baseline)
 

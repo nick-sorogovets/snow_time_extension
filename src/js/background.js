@@ -4,6 +4,7 @@ import {
 	CreateFolder,
 	captureTab,
 	UploadScreenshot,
+	finalizeUploadedFile,
 	GetCurrentWindow,
 } from './api.js';
 import { initI18n, t } from './i18n.js';
@@ -17,6 +18,7 @@ const DEFAULTS = {
 	filename_postfix: 'short_date',
 	auto_screenshot: false,
 	auto_upload: false,
+	copy_link_after_upload: false,
 	language: 'en',
 	screenshot_mode: 'visible',
 	max_page_height: 15000,
@@ -107,13 +109,44 @@ async function handleSubmitPressed({ week_name }) {
 			advanceIncrement: true,
 		});
 
-		const file = await UploadScreenshot({
+		let file = await UploadScreenshot({
 			token,
 			folderId: target.id,
 			dataUrl,
 			filename,
 		});
-		notify('snow-upload-ok', 'app_name', t('notify_uploaded', { name: file.name }));
+		let shareLink = null;
+		if (settings.copy_link_after_upload) {
+			try {
+				({ file, shareLink } = await finalizeUploadedFile({
+					token,
+					file,
+					shareLink: true,
+				}));
+				if (shareLink) {
+					try {
+						await navigator.clipboard.writeText(shareLink);
+					} catch (err) {
+						console.warn('clipboard write failed', err);
+					}
+				}
+			} catch (shareErr) {
+				console.error(shareErr);
+				notify(
+					'snow-upload-ok',
+					'app_name',
+					t('err_share_link', { name: file.name, error: shareErr.message })
+				);
+				return file;
+			}
+		}
+		notify(
+			'snow-upload-ok',
+			'app_name',
+			shareLink
+				? t('notify_uploaded_link_copied', { name: file.name })
+				: t('notify_uploaded', { name: file.name })
+		);
 		return file;
 	} catch (err) {
 		console.error('submit upload failed', err);
@@ -181,6 +214,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	if (!message || typeof message.action !== 'string') return false;
 
 	switch (message.action) {
+		case 'ping':
+			sendResponse({ ok: true, id: chrome.runtime.id });
+			return false;
 		case 'init':
 			handleInit(message).then(sendResponse);
 			return true;

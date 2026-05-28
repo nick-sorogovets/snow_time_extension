@@ -82,6 +82,31 @@ function CaptureScreenshot(windowId = null) {
 	return captureVisibleTab(windowId);
 }
 
+function getFileShareLink(file) {
+	return file.webViewLink || `https://drive.google.com/file/d/${file.id}/view?usp=sharing`;
+}
+
+async function shareFileAnyoneWithLink(token, fileId) {
+	try {
+		await driveFetch(`${DRIVE_API}/${fileId}/permissions`, {
+			method: 'POST',
+			token,
+			body: JSON.stringify({ role: 'reader', type: 'anyone' }),
+			headers: { 'Content-Type': 'application/json' },
+		});
+	} catch (err) {
+		// Permission may already exist if the file was shared before.
+		if (err.status !== 403 && err.status !== 409) throw err;
+	}
+}
+
+async function finalizeUploadedFile({ token, file, shareLink }) {
+	if (!shareLink) return { file, shareLink: null };
+	await shareFileAnyoneWithLink(token, file.id);
+	const link = getFileShareLink(file);
+	return { file: { ...file, webViewLink: link }, shareLink: link };
+}
+
 async function UploadScreenshot({ token, folderId, dataUrl, filename }) {
 	const base64Data = dataUrl.replace(/^data:image\/(png|jpe?g);base64,/, '');
 	const metadata = {
@@ -122,4 +147,7 @@ export {
 	captureVisibleTab,
 	CaptureScreenshot,
 	UploadScreenshot,
+	getFileShareLink,
+	shareFileAnyoneWithLink,
+	finalizeUploadedFile,
 };
