@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/nick-sorogovets/snow_time_extension#readme",
   "devDependencies": {
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "clean-css": "^5.3.3",
     "copy-webpack-plugin": "^14.0.0",
     "dotenv": "^16.5.0",
